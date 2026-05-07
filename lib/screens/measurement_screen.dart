@@ -1,33 +1,28 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:ortho_quant_md/utils/geometry.dart';
-import 'package:ortho_quant_md/models/measurement_model.dart';
-// import 'package:google_fonts/google_fonts.dart'; // Unused
-import 'package:ortho_quant_md/screens/export_screen.dart';
-import 'package:ortho_quant_md/models/template_model.dart'; // Ensure this is imported
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 import 'dart:typed_data';
+import 'dart:ui' as ui;
+
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:path_provider/path_provider.dart';
 
+import 'package:ortho_quant_md/models/measurement_model.dart';
 import 'package:ortho_quant_md/models/measurement_record.dart';
+import 'package:ortho_quant_md/models/template_model.dart';
+import 'package:ortho_quant_md/screens/export_screen.dart';
+import 'package:ortho_quant_md/screens/paywall_screen.dart';
 import 'package:ortho_quant_md/screens/save_record_screen.dart';
-import 'package:ortho_quant_md/templates/template_registry.dart'; // NEW
-import 'package:ortho_quant_md/templates/base/measurement_template_base.dart'; // NEW
-
 import 'package:ortho_quant_md/screens/settings_screen.dart';
 import 'package:ortho_quant_md/services/settings_service.dart';
-import 'package:ortho_quant_md/services/history_service.dart';
-import 'package:uuid/uuid.dart';
 import 'package:ortho_quant_md/services/subscription_service.dart';
-import 'package:ortho_quant_md/screens/paywall_screen.dart';
-// import 'package:ortho_quant_md/main.dart'; // No longer needed for pathObserver
+import 'package:ortho_quant_md/templates/base/measurement_template_base.dart';
+import 'package:ortho_quant_md/templates/template_registry.dart';
+import 'package:ortho_quant_md/utils/geometry.dart';
 
 
+import 'package:ortho_quant_md/controllers/measurement_controller.dart';
 import 'package:ortho_quant_md/widgets/measurement_boxes.dart';
 import 'package:ortho_quant_md/widgets/cobb_icon.dart';
 import 'package:ortho_quant_md/widgets/magnifier_overlay_painter.dart';
@@ -51,16 +46,12 @@ class _MeasurementScreenState extends State<MeasurementScreen> with TickerProvid
   Matrix4? _preSmartZoomMatrix;
   Timer? _smartZoomTimer;
 
-  final List<MeasurementModel> _measurements = [];
-  String? _selectedMeasurementId; // ID of the currently active/selected measurement
-  
-  // Persistence
-  late MeasurementRecord _currentRecord;
-  final HistoryService _historyService = HistoryService();
-  final Uuid _uuid = const Uuid();
-
-  // Temporary state for creating a NEW measurement
-  MeasurementType _currentToolType = MeasurementType.angle3Point;
+  // Data layer — measurements, selection, current tool, persistence record.
+  // The controller owns the state; the screen reaches into it through the
+  // proxy getters below (_measurements, _selectedMeasurementId, etc.) so
+  // that existing call sites keep working unchanged. A listener on the
+  // controller calls setState whenever it notifies.
+  late final MeasurementController _ctrl;
   
   // Scroll Controller for measurement list
   final ScrollController _listScrollController = ScrollController();
@@ -120,18 +111,12 @@ class _MeasurementScreenState extends State<MeasurementScreen> with TickerProvid
     super.initState();
     debugPrint("DEBUG: templates count: ${appTemplates.length}");
     debugPrint("DEBUG: last template: ${appTemplates.last.title} (${appTemplates.last.category})");
-    if (widget.initialRecord != null) {
-      _currentRecord = widget.initialRecord!;
-      _measurements.addAll(_currentRecord.measurements);
-    } else {
-      // New Session
-      _currentRecord = MeasurementRecord(
-        id: _uuid.v4(),
-        timestamp: DateTime.now(),
-        imagePath: widget.imagePath,
-        measurements: _measurements,
-      );
-    }
+
+    _ctrl = MeasurementController(
+      imagePath: widget.imagePath,
+      initialRecord: widget.initialRecord,
+    );
+    _ctrl.addListener(_onControllerChanged);
 
     // RESTORE ACTIVE TEMPLATE IF SAVED
     if (_currentRecord.templateId != null) {
@@ -149,54 +134,21 @@ class _MeasurementScreenState extends State<MeasurementScreen> with TickerProvid
 
     // Load initial styles
     _loadSettings();
-    
-    // Init Animations
-
 
     SettingsService().addListener(_onSettingsChanged);
-    _persistImage(); // Ensure image is saved to permanent storage
+    // Ensure the image is copied into the documents directory so the
+    // record can survive iOS sandbox path changes between launches.
+    _ctrl.persistImage(widget.imagePath);
     _loadImage();
-    
+
     _listScrollController.addListener(_updateScrollArrows);
 
     // Check Tutorial
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkAndShowTutorial());
   }
 
-  Future<void> _persistImage() async {
-     try {
-        final file = File(widget.imagePath);
-        if (!await file.exists()) return;
-        
-        final appDir = await getApplicationDocumentsDirectory();
-        final fileName = widget.imagePath.split('/').last;
-        final persistentPath = '${appDir.path}/$fileName';
-        
-        // If already in appDir, update record and return
-        if (widget.imagePath.startsWith(appDir.path)) {
-           _currentRecord.imagePath = widget.imagePath;
-           return;
-        }
-        
-        // Check if we already copied it (to avoid overwriting or duplicates)
-        final targetFile = File(persistentPath);
-        if (!await targetFile.exists()) {
-           await file.copy(persistentPath);
-           print('Image persisted to: $persistentPath');
-        } else {
-           // File exists in documents, use it
-        }
-        
-        setState(() {
-           _currentRecord.imagePath = persistentPath;
-        });
-        
-        // Save the record with the new persistent path
-        await _historyService.saveRecord(_currentRecord);
-        
-     } catch (e) {
-        print('Error persisting image: $e');
-     }
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadImage() async {
@@ -454,6 +406,8 @@ class _MeasurementScreenState extends State<MeasurementScreen> with TickerProvid
   void dispose() {
     SettingsService().removeListener(_onSettingsChanged);
     _autoSave();
+    _ctrl.removeListener(_onControllerChanged);
+    _ctrl.dispose();
     _listScrollController.removeListener(_updateScrollArrows);
     _listScrollController.dispose();
     _transformationController.dispose();
@@ -463,18 +417,8 @@ class _MeasurementScreenState extends State<MeasurementScreen> with TickerProvid
 
 
 
-  Future<void> _autoSave() async {
-    // Sync current measurements to the record
-    // Sync current measurements to the record
-    _currentRecord.measurements = List.from(_measurements);
-    if (_activeTemplate != null) {
-       _currentRecord.templateId = _activeTemplate!.id;
-    }
-
-    // Only save if we have measurements or if it was already saved manually
-    if (_measurements.isNotEmpty || !_currentRecord.isAutoSaved) {
-       await _historyService.saveRecord(_currentRecord);
-    }
+  Future<void> _autoSave() {
+    return _ctrl.autoSave(activeTemplateId: _activeTemplate?.id);
   }
 
   Future<void> _openSaveScreen() async {
@@ -566,100 +510,37 @@ class _MeasurementScreenState extends State<MeasurementScreen> with TickerProvid
      return null;
   }
 
-  // Check if calibration exists
-  bool get _hasCalibration => _measurements.any((m) => m.type == MeasurementType.calibration);
-
-  MeasurementModel? get _activeMeasurement {
-    if (_selectedMeasurementId == null) return null;
-    try {
-      return _measurements.firstWhere((m) => m.id == _selectedMeasurementId);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  final List<Color> _availableColors = [
-    const Color(0xFF00BFA5), // Teal
-    const Color(0xFFFF4081), // Pink
-    const Color(0xFF2979FF), // Blue
-
-    const Color(0xFFB388FF), // Purple
-    const Color(0xFF76FF03), // Light Green
-    const Color(0xFFFF6E40), // Deep Orange
-    const Color(0xFF18FFFF), // Cyan Accent
-  ];
-
-  Color _getNextColor() {
-    if (_measurements.isEmpty) return _availableColors[0];
-    final usedColors = _measurements.map((m) => m.color).toSet();
-    for (final color in _availableColors) {
-      if (!usedColors.contains(color)) return color;
-    }
-    return _availableColors[math.Random().nextInt(_availableColors.length)];
-  }
+  // ----- Proxy getters into MeasurementController -----
+  // These keep existing call sites unchanged while the data lives in
+  // the controller. Inline mutations on `_measurements` continue to work
+  // because the getter returns the controller's mutable list reference;
+  // wrap them in setState as before for redraws.
+  List<MeasurementModel> get _measurements => _ctrl.measurements;
+  String? get _selectedMeasurementId => _ctrl.selectedId;
+  set _selectedMeasurementId(String? id) => _ctrl.select(id);
+  MeasurementRecord get _currentRecord => _ctrl.record;
+  bool get _hasCalibration => _ctrl.hasCalibration;
+  MeasurementModel? get _activeMeasurement => _ctrl.activeMeasurement;
 
   void _createNewMeasurement(MeasurementType type, {String? label, List<ReferencePoint>? initialPoints, bool forceAcute = false, List<String>? sourceIds}) {
-    // If trying to add calibration but one exists (should be blocked by UI, but safe guard)
-    if (type == MeasurementType.calibration && _hasCalibration) return;
-    
-    // Prevent multiple incomplete measurements of same type (outside Template only)
-    if (_activeTemplate == null) {
-        final hasIncomplete = _measurements.any((m) => m.type == type && m.points.length < m.totalSteps);
-        if (hasIncomplete) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please complete the current measurement first.')));
-            return;
-        }
+    final m = _ctrl.createNew(
+      type,
+      label: label,
+      initialPoints: initialPoints,
+      forceAcute: forceAcute,
+      sourceIds: sourceIds,
+      // While a template wizard is driving point placement, allow
+      // multiple incomplete measurements of the same type.
+      allowMultipleIncomplete: _activeTemplate != null,
+    );
+    if (m == null && type != MeasurementType.calibration && _activeTemplate == null) {
+      // Blocked because of an existing incomplete measurement of this type.
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please complete the current measurement first.')));
     }
-    
-    final newId = DateTime.now().millisecondsSinceEpoch.toString();
-    
-    // Calculate initial active step if points provided
-    int startStep = 1;
-    if (initialPoints != null && initialPoints.isNotEmpty) {
-       startStep = initialPoints.length + 1;
-    }
-
-    setState(() {
-      _selectedMeasurementId = newId;
-      _currentToolType = type;
-      _measurements.add(MeasurementModel(
-        id: newId, 
-        type: type,
-        color: type == MeasurementType.calibration ? Colors.white : _getNextColor(), // White for calibration
-        activeStep: startStep,
-        totalSteps: (type == MeasurementType.spinopelvic || type == MeasurementType.lcea) ? 6 : 
-                    (type == MeasurementType.pelvicTilt || type == MeasurementType.pelvicIncidence || type == MeasurementType.cobbAngle || type == MeasurementType.blackburnePeel || type == MeasurementType.glenoidDefect || type == MeasurementType.tonnisAngle) ? 4 : 
-                    (type == MeasurementType.modifiedInsallSalvati || type == MeasurementType.angle3Point || type == MeasurementType.circle3Point) ? 3 : 
-                    (type == MeasurementType.point) ? 1 :
-                    (type == MeasurementType.areaPolygon) ? 99 : // Dynamic polygon, finish button required
-                    (type == MeasurementType.distance || type == MeasurementType.calibration || type == MeasurementType.circle || type == MeasurementType.sacralSlope || type == MeasurementType.areaCircle) ? 2 : 1,
-        label: label,
-        forceAcute: forceAcute,
-        points: initialPoints, // Can be null
-        sourceIds: sourceIds, 
-        isAuxiliary: type == MeasurementType.glenoidDefect, // Auto-hide Glenoid Result
-      ));
-      
-
-    });
   }
-  
+
   void _duplicateMeasurement() {
-    if (_activeMeasurement != null && _activeMeasurement!.type != MeasurementType.calibration) {
-      setState(() {
-        final clone = _activeMeasurement!.clone();
-        // Shift clone slightly so it's visible (Normalized offset approx 5%)
-        final offset = const Offset(0.05, 0.05);
-        final offsetPoints = clone.points.map((p) => ReferencePoint(p.position + offset, label: p.label)).toList();
-        clone.points = offsetPoints;
-        clone.color = _getNextColor(); // Assign new color to duplicate
-        if (clone.labelPosition != null) {
-           clone.labelPosition = clone.labelPosition! + offset;
-        }
-        _measurements.add(clone);
-        _selectedMeasurementId = clone.id; // Select the new one
-      });
-    }
+    _ctrl.duplicateActive();
   }
 
   void _handleTapUp(TapUpDetails details, Rect imageRect) {
@@ -960,78 +841,42 @@ class _MeasurementScreenState extends State<MeasurementScreen> with TickerProvid
     );
   }
 
-  void _undoPoint() {
-    final m = _activeMeasurement;
-    if (m != null && m.points.isNotEmpty && !m.isLocked) {
-      setState(() {
-        m.points.removeLast();
-        // Update Step
-        if (m.points.isEmpty) {
-           m.activeStep = 1;
-        } else {
-           m.activeStep = m.points.length + 1;
-        }
-      });
-    }
-  }
+  void _deleteMeasurement() {
+    final selectedId = _selectedMeasurementId;
+    if (selectedId == null) return;
 
-   void _deleteMeasurement() {
-    if (_selectedMeasurementId != null) {
-      // Check if this ID is part of active template
-      if (_activeTemplate != null) {
-         bool isTemplateItem = _templateLandmarkMeasurementIds.containsValue(_selectedMeasurementId) || 
-                               _templateCalculationIds.containsValue(_selectedMeasurementId);
-         
-         if (isTemplateItem) {
-             // Delete ALL template items
-             setState(() {
-                 // Remove Landmarks
-                 for (var id in _templateLandmarkMeasurementIds.values) {
-                     _measurements.removeWhere((m) => m.id == id);
-                 }
-                 // Remove Calculations
-                 for (var id in _templateCalculationIds.values) {
-                     _measurements.removeWhere((m) => m.id == id);
-                 }
-                 
-                 _templateLandmarkMeasurementIds.clear();
-                 _templateCalculationIds.clear();
-                 _activeTemplate = null;
-                 _selectedMeasurementId = null;
-                 _activeLandmarkIndex = 0;
-             });
-             return; // Done
-         }
+    // If the selected measurement is part of an active template, delete
+    // all of the template's landmarks and calculations as a unit and
+    // exit the template wizard.
+    if (_activeTemplate != null) {
+      final isTemplateItem =
+          _templateLandmarkMeasurementIds.containsValue(selectedId) ||
+              _templateCalculationIds.containsValue(selectedId);
+      if (isTemplateItem) {
+        final ids = <String>{
+          ..._templateLandmarkMeasurementIds.values,
+          ..._templateCalculationIds.values,
+        };
+        _ctrl.removeWhereIdIn(ids);
+        setState(() {
+          _templateLandmarkMeasurementIds.clear();
+          _templateCalculationIds.clear();
+          _activeTemplate = null;
+          _activeLandmarkIndex = 0;
+        });
+        return;
       }
-    
-      setState(() {
-        _measurements.removeWhere((m) => m.id == _selectedMeasurementId);
-        _selectedMeasurementId = null;
-      });
     }
-  }
 
-  void _toggleLock() {
-    if (_activeMeasurement != null) {
-      setState(() {
-        _activeMeasurement!.isLocked = !_activeMeasurement!.isLocked;
-      });
-    }
+    _ctrl.removeById(selectedId);
   }
 
   void _finishPolygon() {
-    if (_activeMeasurement != null && _activeMeasurement!.type == MeasurementType.areaPolygon) {
-      if (_activeMeasurement!.points.length < 3) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Polygon needs at least 3 points'))
-        );
-        return;
-      }
-      
-      setState(() {
-        _activeMeasurement!.isLocked = true;
-        _selectedMeasurementId = null; // Deselect after finishing
-      });
+    final ok = _ctrl.finishPolygonActive();
+    if (!ok && _activeMeasurement?.type == MeasurementType.areaPolygon) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Polygon needs at least 3 points')),
+      );
     }
   }
 
@@ -1809,78 +1654,8 @@ class _MeasurementScreenState extends State<MeasurementScreen> with TickerProvid
       addRow(label, text.trim(), unit);
   }
 
-  void _syncDependentMeasurements(MeasurementModel source) {
-     for (final m in _measurements) {
-        if (m.sourceIds != null && m.sourceIds!.contains(source.id)) {
-            // Determine logic based on type
-            // Assumption: Spinopelvic Pattern (SourceIds: [0]=SS, [1]=HipL, [2]=HipR)
-            if ((m.type == MeasurementType.pelvicTilt || m.type == MeasurementType.pelvicIncidence) && m.sourceIds!.length >= 3) {
-                 try {
-                     final s1 = _measurements.firstWhere((x) => x.id == m.sourceIds![0]);
-                     final s2 = _measurements.firstWhere((x) => x.id == m.sourceIds![1]);
-                     final s3 = _measurements.firstWhere((x) => x.id == m.sourceIds![2]);
-                     
-                     if (s1.points.length >= 2 && s2.points.isNotEmpty && s3.points.isNotEmpty) {
-                        m.points = [
-                           ReferencePoint(s1.points[0].position, label: s1.points[0].label),
-                           ReferencePoint(s1.points[1].position, label: s1.points[1].label),
-                           ReferencePoint(s2.points[0].position, label: s2.points[0].label),
-                           ReferencePoint(s3.points[0].position, label: s3.points[0].label),
-                        ];
-                     }
-                 } catch (_) {}
-            }
-            // KNEE PATELLA SYNC
-            if (m.type == MeasurementType.modifiedInsallSalvati && m.sourceIds!.length >= 2) {
-                 // Needs Patella (2 pts) + Tuberosity (1 pt)
-                 try {
-                     final s1 = _measurements.firstWhere((x) => x.id == m.sourceIds![0]); // Patella
-                     final s2 = _measurements.firstWhere((x) => x.id == m.sourceIds![1]); // Tuberosity
-
-                     if (s1.points.length >= 2 && s2.points.isNotEmpty) {
-                        m.points = [
-                           ReferencePoint(s1.points[0].position, label: s1.points[0].label),
-                           ReferencePoint(s1.points[1].position, label: s1.points[1].label),
-                           ReferencePoint(s2.points[0].position, label: s2.points[0].label),
-                        ];
-                     }
-                 } catch (_) {}
-            }
-            if (m.type == MeasurementType.blackburnePeel && m.sourceIds!.length >= 2) {
-                 // Needs Patella (2 pts) + Plateau (2 pts)
-                 try {
-                     final s1 = _measurements.firstWhere((x) => x.id == m.sourceIds![0]); // Patella
-                     final s2 = _measurements.firstWhere((x) => x.id == m.sourceIds![1]); // Plateau
-
-                     if (s1.points.length >= 2 && s2.points.length >= 2) {
-                        m.points = [
-                           ReferencePoint(s1.points[0].position, label: s1.points[0].label),
-                           ReferencePoint(s1.points[1].position, label: s1.points[1].label),
-                           ReferencePoint(s2.points[0].position, label: s2.points[0].label),
-                           ReferencePoint(s2.points[1].position, label: s2.points[1].label),
-                        ];
-                     }
-                 } catch (_) {}
-            }
-            if (m.type == MeasurementType.glenoidDefect && m.sourceIds!.length >= 2) {
-               // Needs Circle (3 pts) + Defect (1 pt)
-               try {
-                   final s1 = _measurements.firstWhere((x) => x.id == m.sourceIds![0]); // Circle
-                   final s2 = _measurements.firstWhere((x) => x.id == m.sourceIds![1]); // Defect
-
-                   if (s1.points.length >= 3 && s2.points.isNotEmpty) {
-                      m.points = [
-                         ReferencePoint(s1.points[0].position, label: s1.points[0].label),
-                         ReferencePoint(s1.points[1].position, label: s1.points[1].label),
-                         ReferencePoint(s1.points[2].position, label: s1.points[2].label),
-                         ReferencePoint(s2.points[0].position, label: s2.points[0].label),
-                      ];
-                   }
-               } catch (_) {}
-          }
-        }
-     }
-  }
+  void _syncDependentMeasurements(MeasurementModel source) =>
+      _ctrl.syncDependents(source);
 
   @override
   Widget build(BuildContext context) {
@@ -2503,9 +2278,10 @@ class _MeasurementScreenState extends State<MeasurementScreen> with TickerProvid
                                           icon: const Icon(Icons.color_lens, color: Colors.white),
                                           onPressed: () {
                                               setState(() {
-                                                int currentIndex = _availableColors.indexOf(activeM.color);
-                                                int nextIndex = (currentIndex + 1) % _availableColors.length;
-                                                activeM.color = _availableColors[nextIndex];
+                                                final palette = _ctrl.palette;
+                                                final currentIndex = palette.indexOf(activeM.color);
+                                                final nextIndex = (currentIndex + 1) % palette.length;
+                                                activeM.color = palette[nextIndex];
                                               });
                                           },
                                           tooltip: 'Change Color',
