@@ -29,6 +29,7 @@ import 'package:ortho_quant_md/screens/paywall_screen.dart';
 
 
 import 'package:ortho_quant_md/widgets/measurement_boxes.dart';
+import 'package:ortho_quant_md/widgets/cobb_icon.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -3227,62 +3228,6 @@ class _MeasurementScreenState extends State<MeasurementScreen> with TickerProvid
         ),
       );
   }
-}
-
-class CobbIcon extends StatelessWidget {
-  final Color color;
-  const CobbIcon({super.key, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(28, 28),
-      painter: CobbPainter(color),
-    );
-  }
-}
-
-class CobbPainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  CobbPainter(this.color, {this.strokeWidth = 2.0});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-
-    // Vertebrae (Rounded Rects)
-    // Top
-    _drawRotatedRect(canvas, paint, cx + 2, cy - 8, -15 * 3.14159 / 180);
-    // Mid
-    _drawRotatedRect(canvas, paint, cx - 2, cy, 0);
-    // Bot
-    _drawRotatedRect(canvas, paint, cx + 2, cy + 8, 15 * 3.14159 / 180);
-
-    // Lines (Abstract intersection)
-    // Top Line (extending from top vert)
-    canvas.drawLine(Offset(cx - 8, cy - 10), Offset(cx + 8, cy - 14), paint..strokeWidth = 1.5);
-    // Bot Line (extending from bot vert)
-    canvas.drawLine(Offset(cx - 8, cy + 10), Offset(cx + 8, cy + 14), paint);
-  }
-
-  void _drawRotatedRect(Canvas canvas, Paint paint, double x, double y, double angle) {
-    canvas.save();
-    canvas.translate(x, y);
-    canvas.rotate(angle);
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: Offset.zero, width: 10, height: 6), const Radius.circular(2)), paint..strokeWidth = 1.5);
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class MeasurementsPainter extends CustomPainter {
