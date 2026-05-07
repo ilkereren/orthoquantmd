@@ -82,3 +82,7 @@ build_log.txt
 .env.*
 secrets.dart
 secrets.json
+
+# VSCode launch config can contain --dart-define secrets; keep local only.
+# A sanitised launch.json.example is committed instead.
+.vscode/launch.json
