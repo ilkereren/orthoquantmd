@@ -1,0 +1,33 @@
+// List of "Tip of the Day" messages shown on the home screen.
+// You can add, remove, or edit tips here.
+
+const List<String> orthopedicTips = [
+  'For accurate measurements in 3D imaging, ensure the calibration marker is placed at the same depth as the structure being measured.',
+  'In lateral knee X-rays, superimposed posterior condyles indicate a true lateral view.',
+  'When measuring Cobb angle, select the most tilted vertebrae above and below the curve.',
+  'For pelvic incidence, ensure the femoral heads are clearly visible.',
+  'Calibration markers are essential for absolute distance measurements. Always verify the scale.',
+  'For precise placement of position markers, use pinch-to-zoom and pan.',
+  'Even if you don\'t save, the measurements you made are stored in the history.',
+  'Suggest new measurement methods or templates to enhance the app functionality.',
+  'Crop images for a simpler measurement experience.',
+  'Measuring elements can be moved and adjusted by dragging their control points.',
+  'You can save and share measurements as PDF or image.',
+  'Accurate long bone measurements require the entire bone to be visible within the image frame.',
+  'Always double-check your initial and final points when measuring angles to prevent calculation errors.',
+  'For spinal alignment, consider using a full-spine X-ray to capture the entire curvature.',
+  'Utilize the app\'s measurement history to compare progress over time or review previous findings.',
+  'Before saving, review all measurements for accuracy and completeness.',
+  'The quality of your input image directly impacts the precision of your measurements.',
+  'Explore the different measurement tools available to find the most suitable one for each scenario.',
+  'If a dedicated calibration marker is unavailable, use a known anatomical landmark or object of standard size within the image for scaling.',
+  'To delete a measurement, swipe left on its entry in the history. Please note, this action cannot be undone!',
+  'We do not send any data from your device to anywhere on the world! All data is stored locally on your device.',
+  'When a template is selected, tap the ⓘ icon to learn more about the measurements.',
+  'Deleting any single element of a template will remove the entire template.',
+  'Tap on this tip card to see a new randomized tip.',
+  'Unlock advanced analytics and a wider range of templates by subscribing to OrthoQuant MD PRO!',
+  'Efficiently organize your measurement records into custom folders in the History for better clinical tracking.',
+  'Drag and drop image files directly into the app window to start a measurement instantly.',
+  'Did you know? You can open images directly from iOS Photos or Files app by tapping Share and selecting OrthoQuant MD.',
+];
