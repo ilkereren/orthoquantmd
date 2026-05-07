@@ -30,6 +30,7 @@ import 'package:ortho_quant_md/screens/paywall_screen.dart';
 
 import 'package:ortho_quant_md/widgets/measurement_boxes.dart';
 import 'package:ortho_quant_md/widgets/cobb_icon.dart';
+import 'package:ortho_quant_md/widgets/magnifier_overlay_painter.dart';
 import 'package:ortho_quant_md/widgets/success_overlay.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -2597,7 +2598,7 @@ class _MeasurementScreenState extends State<MeasurementScreen> with TickerProvid
                                    // Brightness/Contrast Enhancer
                                    Positioned.fill(
                                      child: CustomPaint(
-                                       painter: _MagnifierOverlayPainter(),
+                                       painter: MagnifierOverlayPainter(),
                                      ),
                                    ),
                                    Center(
@@ -3976,18 +3977,3 @@ class MeasurementsPainter extends CustomPainter {
   }
 }
 
-class _MagnifierOverlayPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Brighten the magnified image using BlendMode.screen
-    // This adds light to the image, making dark areas more visible.
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.25) // Adjust opacity for brightness level
-      ..blendMode = BlendMode.screen;
-      
-    canvas.drawRect(Offset.zero & size, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
