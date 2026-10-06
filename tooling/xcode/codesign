@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+
+target=""
+for arg in "$@"; do
+  target="$arg"
+done
+
+if [ -n "$target" ] && [ -e "$target" ]; then
+  xattr -cr "$target" 2>/dev/null || true
+  parent=$(dirname "$target")
+  case "$parent" in
+    *.framework|*.appex|*.app)
+      xattr -cr "$parent" 2>/dev/null || true
+      ;;
+  esac
+fi
+
+exec /usr/bin/codesign "$@"

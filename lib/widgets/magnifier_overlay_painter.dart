@@ -9,7 +9,8 @@ class MagnifierOverlayPainter extends CustomPainter {
     // Brighten the magnified image using BlendMode.screen.
     // This adds light to the image, making dark areas more visible.
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.25) // Adjust opacity for brightness level
+      ..color = Colors.white
+          .withValues(alpha: 0.25) // Adjust opacity for brightness level
       ..blendMode = BlendMode.screen;
 
     canvas.drawRect(Offset.zero & size, paint);

@@ -50,6 +50,8 @@ macos/Podfile.lock
 android/.gradle/
 android/local.properties
 android/key.properties
+android/app/*.jks
+android/app/*.keystore
 android/app/.cxx/
 
 # Symbolication related
@@ -82,7 +84,14 @@ build_log.txt
 .env.*
 secrets.dart
 secrets.json
+tooling/bin/firebase
 
 # VSCode launch config can contain --dart-define secrets; keep local only.
 # A sanitised launch.json.example is committed instead.
 .vscode/launch.json
+
+# Firebase Functions dependencies
+functions/node_modules/
+
+# Build output kept out of iCloud sync (build -> ~/Library/Caches symlink)
+/build

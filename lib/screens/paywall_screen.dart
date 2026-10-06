@@ -14,13 +14,21 @@ class _PaywallScreenState extends State<PaywallScreen> {
   bool _isPurchasing = false;
 
   @override
+  void initState() {
+    super.initState();
+    final service = SubscriptionService();
+    if (service.availablePackages.isEmpty && !service.isLoadingOfferings) {
+      service.loadOfferings();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: SubscriptionService(),
       builder: (context, _) {
-        final offerings = SubscriptionService().offerings;
-        final currentOffering = offerings?.current;
-        final packages = currentOffering?.availablePackages ?? [];
+        final service = SubscriptionService();
+        final packages = service.availablePackages;
 
         return Scaffold(
           body: Container(
@@ -44,12 +52,20 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 30,
+                          ),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Icon(Icons.workspace_premium, color: Colors.amber, size: 80),
+                      const Icon(
+                        Icons.workspace_premium,
+                        color: Colors.amber,
+                        size: 80,
+                      ),
                       const SizedBox(height: 16),
                       const Text(
                         'OrthoQuant PRO',
@@ -62,10 +78,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       ),
                       const Text(
                         'Unlock advanced clinical analysis',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
-                        ),
+                        style: TextStyle(color: Colors.white70, fontSize: 16),
                       ),
                       const SizedBox(height: 40),
 
@@ -94,111 +107,209 @@ class _PaywallScreenState extends State<PaywallScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 20),
-                                _buildFeatureItem(Icons.analytics_outlined, 'Advanced Templates', 'Access specialist templates (Glenoid, Spine, etc.)'),
-                                _buildFeatureItem(Icons.folder_outlined, 'History Folder Structure', 'Organize and categorize your exams into folders'),
-                                
+                                _buildFeatureItem(
+                                  Icons.analytics_outlined,
+                                  'Advanced Templates',
+                                  'Access specialist templates (Glenoid, Spine, etc.)',
+                                ),
+                                _buildFeatureItem(
+                                  Icons.folder_outlined,
+                                  'History Folder Structure',
+                                  'Organize and categorize your exams into folders',
+                                ),
+
                                 const SizedBox(height: 32),
                                 // Pricing Cards
-                                if (packages.isEmpty)
-                                  const Center(child: CircularProgressIndicator())
+                                if (packages.isEmpty &&
+                                    service.isLoadingOfferings)
+                                  const Center(
+                                    child: CircularProgressIndicator(),
+                                  )
+                                else if (packages.isEmpty)
+                                  _buildOfferingsUnavailable(
+                                    service.offeringsError ??
+                                        'Subscription plans are unavailable.',
+                                  )
                                 else
-                                  ...packages.map((package) => _buildPackageCard(context, package)),
+                                  ...packages.map(
+                                    (package) =>
+                                        _buildPackageCard(context, package),
+                                  ),
 
                                 const SizedBox(height: 20),
-                                
+
                                 // Restore & Policy
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8.0,
+                                  ),
                                   child: Wrap(
                                     alignment: WrapAlignment.center,
                                     spacing: 8,
                                     children: [
                                       TextButton(
-                                        onPressed: () => launchUrl(Uri.parse('https://gist.github.com/ilkereren/664c91885d847c7c69319b90629f40e6')),
-                                        child: const Text('Privacy Policy', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                        onPressed: () => launchUrl(
+                                          Uri.parse(
+                                            'https://gist.github.com/ilkereren/664c91885d847c7c69319b90629f40e6',
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'Privacy Policy',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 13,
+                                          ),
+                                        ),
                                       ),
                                       const Padding(
-                                        padding: EdgeInsets.symmetric(vertical: 12.0),
-                                        child: Text('|', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: 12.0,
+                                        ),
+                                        child: Text(
+                                          '|',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 13,
+                                          ),
+                                        ),
                                       ),
                                       TextButton(
-                                        onPressed: () => launchUrl(Uri.parse('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')),
-                                        child: const Text('Terms of Use', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                        onPressed: () => launchUrl(
+                                          Uri.parse(
+                                            'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'Terms of Use',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 13,
+                                          ),
+                                        ),
                                       ),
                                       const Padding(
-                                        padding: EdgeInsets.symmetric(vertical: 12.0),
-                                        child: Text('|', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: 12.0,
+                                        ),
+                                        child: Text(
+                                          '|',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 13,
+                                          ),
+                                        ),
                                       ),
                                       TextButton(
                                         onPressed: () async {
-                                          await SubscriptionService().restorePurchases();
-                                          if (SubscriptionService().isPro && context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Purchases restored successfully!')),
+                                          await SubscriptionService()
+                                              .restorePurchases();
+                                          if (SubscriptionService().isPro &&
+                                              context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Purchases restored successfully!',
+                                                ),
+                                              ),
                                             );
                                             Navigator.pop(context);
                                           }
                                         },
-                                        child: const Text('Restore', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                        child: const Text(
+                                          'Restore',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 13,
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                
+
                                 const SizedBox(height: 12),
-                                  const SizedBox(height: 24),
-                                  // --- AUTO-RENEWAL DISCLOSURE ---
-                                  Container(
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.withAlpha(20),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: const Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Subscription Information:',
-                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54),
-                                        ),
-                                        SizedBox(height: 8),
-                                        Text(
-                                          '• Payment will be charged to your iTunes Account at confirmation of purchase.\n'
-                                          '• Subscription automatically renews unless auto-renew is turned off at least 24-hours before the end of the current period.\n'
-                                          '• Your account will be charged for renewal within 24-hours prior to the end of the current period.\n'
-                                          '• Subscriptions may be managed by the user and auto-renewal may be turned off by going to the user\'s Account Settings after purchase.',
-                                          style: TextStyle(fontSize: 11, color: Colors.black45, height: 1.4),
-                                        ),
-                                      ],
-                                    ),
+                                const SizedBox(height: 24),
+                                // --- AUTO-RENEWAL DISCLOSURE ---
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withAlpha(20),
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
-                                  const SizedBox(height: 24),
+                                  child: const Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Subscription Information:',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        '• Payment will be charged to your iTunes Account at confirmation of purchase.\n'
+                                        '• Subscription automatically renews unless auto-renew is turned off at least 24-hours before the end of the current period.\n'
+                                        '• Your account will be charged for renewal within 24-hours prior to the end of the current period.\n'
+                                        '• Subscriptions may be managed by the user and auto-renewal may be turned off by going to the user\'s Account Settings after purchase.',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.black45,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
                                 // --- CONTRIBUTE & EARN PROMO ---
                                 Container(
                                   padding: const EdgeInsets.all(20),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF1E1E1E),
                                     borderRadius: BorderRadius.circular(24),
-                                    border: Border.all(color: Colors.amber.withOpacity(0.3), width: 1.5),
+                                    border: Border.all(
+                                      color: Colors.amber.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      width: 1.5,
+                                    ),
                                   ),
                                   child: Column(
                                     children: [
                                       const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
-                                          Icon(Icons.card_giftcard, color: Colors.amber, size: 24),
+                                          Icon(
+                                            Icons.card_giftcard,
+                                            color: Colors.amber,
+                                            size: 24,
+                                          ),
                                           SizedBox(width: 8),
                                           Text(
                                             'Want it for FREE?',
-                                            style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16),
+                                            style: TextStyle(
+                                              color: Colors.amber,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
                                           ),
                                         ],
                                       ),
-                                        const SizedBox(height: 12),
+                                      const SizedBox(height: 12),
                                       const Text(
                                         'Suggest a new clinical template logic.\nIf we implement it, you get 1 Month PRO.',
                                         textAlign: TextAlign.center,
-                                        style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                          height: 1.4,
+                                        ),
                                       ),
                                       const SizedBox(height: 16),
                                       SizedBox(
@@ -206,13 +317,24 @@ class _PaywallScreenState extends State<PaywallScreen> {
                                         child: OutlinedButton(
                                           onPressed: _showRewardDialog,
                                           style: OutlinedButton.styleFrom(
-                                            side: const BorderSide(color: Color(0xFF00BFA5)),
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                            side: const BorderSide(
+                                              color: Color(0xFF00BFA5),
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 12,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
                                           ),
                                           child: const Text(
                                             'SEE HOW TO CONTRIBUTE',
-                                            style: TextStyle(color: Color(0xFF00BFA5), fontWeight: FontWeight.bold, fontSize: 13),
+                                            style: TextStyle(
+                                              color: Color(0xFF00BFA5),
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -251,7 +373,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
           children: [
             Icon(Icons.card_giftcard, color: Colors.amber, size: 28),
             SizedBox(width: 12),
-            Text('Contribute & Earn PRO', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Contribute & Earn PRO',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -260,31 +389,50 @@ class _PaywallScreenState extends State<PaywallScreen> {
           children: [
             const Text(
               'Help us expand our clinical library!',
-              style: TextStyle(color: Color(0xFF00BFA5), fontWeight: FontWeight.bold, fontSize: 14),
+              style: TextStyle(
+                color: Color(0xFF00BFA5),
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 12),
             const Text(
               'Suggest a new orthopedic template with clear landmarks and reference logic. If we implement your suggestion, we will gift you:',
-              style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 16),
             Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.amber,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
                   '1 MONTH FREE PRO ACCESS',
-                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 16),
             const Text(
               'Your contribution helps orthopedics around the world.',
-              style: TextStyle(color: Colors.white38, fontSize: 11, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                color: Colors.white38,
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ],
         ),
@@ -301,7 +449,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF00BFA5),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text('SEND PROPOSAL'),
           ),
@@ -326,7 +476,8 @@ Reasoning/Importance:
     final Uri emailLaunchUri = Uri(
       scheme: 'mailto',
       path: 'ilker.eren@gmail.com',
-      query: 'subject=OrthoQuant MD: Template Development Proposal&body=${Uri.encodeComponent(body)}',
+      query:
+          'subject=OrthoQuant MD: Template Development Proposal&body=${Uri.encodeComponent(body)}',
     );
 
     try {
@@ -336,6 +487,40 @@ Reasoning/Importance:
     } catch (e) {
       debugPrint('Error launching email: $e');
     }
+  }
+
+  Widget _buildOfferingsUnavailable(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.cloud_off_rounded, color: Colors.grey, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Please check your internet connection and try again.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => SubscriptionService().loadOfferings(),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Try Again'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildFeatureItem(IconData icon, String title, String subtitle) {
@@ -358,7 +543,10 @@ Reasoning/Importance:
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
                 Text(
                   subtitle,
@@ -374,7 +562,7 @@ Reasoning/Importance:
 
   Widget _buildPackageCard(BuildContext context, Package package) {
     final bool isBestValue = package.packageType == PackageType.annual;
-    
+
     // Custom labels based on package type
     String displayTitle = 'Pro Access';
     if (package.packageType == PackageType.annual) {
@@ -388,11 +576,11 @@ Reasoning/Importance:
         setState(() => _isPurchasing = true);
         final success = await SubscriptionService().purchasePackage(package);
         setState(() => _isPurchasing = false);
-        
+
         if (success && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Welcome to PRO!')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Welcome to PRO!')));
           Navigator.pop(context);
         }
       },
@@ -400,7 +588,9 @@ Reasoning/Importance:
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isBestValue ? const Color(0xFFF0FAF9) : const Color(0xFFF5F5F5),
+          color: isBestValue
+              ? const Color(0xFFF0FAF9)
+              : const Color(0xFFF5F5F5),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isBestValue ? const Color(0xFF00BFA5) : Colors.transparent,
@@ -420,18 +610,28 @@ Reasoning/Importance:
                     children: [
                       Text(
                         displayTitle,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
                       ),
                       if (isBestValue)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF00BFA5),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Text(
                             'BEST VALUE',
-                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                     ],
@@ -450,10 +650,16 @@ Reasoning/Importance:
               children: [
                 Text(
                   package.storeProduct.priceString,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF004D40)),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF004D40),
+                  ),
                 ),
                 Text(
-                  package.packageType == PackageType.annual ? 'per year' : 'per month',
+                  package.packageType == PackageType.annual
+                      ? 'per year'
+                      : 'per month',
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],

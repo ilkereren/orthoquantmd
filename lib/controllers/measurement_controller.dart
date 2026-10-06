@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -211,8 +212,7 @@ class MeasurementController extends ChangeNotifier {
   }
 
   static int _totalStepsFor(MeasurementType type) {
-    if (type == MeasurementType.spinopelvic ||
-        type == MeasurementType.lcea) {
+    if (type == MeasurementType.spinopelvic || type == MeasurementType.lcea) {
       return 6;
     }
     if (type == MeasurementType.pelvicTilt ||
@@ -327,8 +327,7 @@ class MeasurementController extends ChangeNotifier {
       }
 
       // Modified Insall–Salvati: Patella (2 pts) + Tuberosity (1 pt).
-      if (m.type == MeasurementType.modifiedInsallSalvati &&
-          ids.length >= 2) {
+      if (m.type == MeasurementType.modifiedInsallSalvati && ids.length >= 2) {
         try {
           final s1 = _measurements.firstWhere((x) => x.id == ids[0]);
           final s2 = _measurements.firstWhere((x) => x.id == ids[1]);
@@ -402,6 +401,8 @@ class MeasurementController extends ChangeNotifier {
   /// record. iOS sandboxing in particular requires this so re-launching
   /// the app can still find the image.
   Future<void> persistImage(String originalPath) async {
+    if (kIsWeb) return;
+
     try {
       final file = File(originalPath);
       if (!await file.exists()) return;

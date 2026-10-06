@@ -46,7 +46,66 @@ This template evaluates glenoid version, medialization, and humeral head subluxa
 2. Walch, G., et al. (1999). Morphologic study of the glenoid in primary glenohumeral osteoarthritis. J Arthroplasty, 14(6), 756–760. https://doi.org/10.1016/s0883-5403(99)90232-2
 3. Campbell, B. R., et al. (2025). Clinical and radiographic outcomes of shoulder hemiarthroplasty for patients with glenoid medialization. JSES, 34(1), e15–e21. https://doi.org/10.1016/j.jse.2024.03.010
 """,
-    
+
+    'cervical_spine_lateral': """
+**Cervical Spine Lateral**
+
+Standing lateral cervical radiograph template for sagittal alignment assessment.
+
+**Point Placement**
+* **C2 inferior endplate:** Mark posterior and anterior corners of the C2 inferior endplate.
+* **C7 inferior endplate:** Mark posterior and anterior corners of the C7 inferior endplate.
+* **C2 centroid:** Mark the center of the C2 vertebral body.
+* **C7 posterior-superior corner:** Mark the posterior-superior corner of C7 for the SVA reference.
+* **T1 superior endplate:** Mark posterior and anterior corners of the T1 superior endplate.
+**Calculated Parameters**
+* **C2-C7 Cobb Lordosis:** Cobb angle between the C2 and C7 inferior endplates.
+* **C2-C7 Sagittal Vertical Axis:** Horizontal offset between the C2 centroid plumb line and the C7 posterior-superior corner. Reported in mm when calibrated, otherwise px.
+* **T1 Slope:** Angle of the T1 superior endplate relative to the horizontal.
+
+**Notes**
+Projection, posture, and incomplete visualization of C7/T1 can substantially affect sagittal measurements. Use calibration if millimeter SVA reporting is needed.
+""",
+
+    'tha_cup_position': """
+**THA Cup Position**
+
+Post-operative AP pelvis template for acetabular cup position checks.
+
+**Point Placement**
+* **Pelvic reference:** Mark the inferior points of the right and left teardrops.
+* **Cup opening line:** Mark the medial and lateral edges of the projected cup opening.
+* **Cup projected ellipse:** Mark the two endpoints of the projected short axis of the cup ellipse.
+
+**Calculated Parameters**
+* **Cup Inclination:** Angle between the inter-teardrop pelvic reference line and the cup opening line.
+* **Cup Version Approximation:** Estimated from the ratio of the projected ellipse short axis to the cup opening long axis.
+
+**Notes**
+The version value is an AP radiographic approximation and is sensitive to pelvic tilt, rotation, beam centering, and how the cup ellipse is identified.
+""",
+
+    'tka_coronal_alignment': """
+**TKA Component Alignment**
+
+Standing AP knee template for post-operative coronal component alignment checks.
+
+**Point Placement**
+* **Femoral axis:** Mark two shaft-center points on the visible femur.
+* **Femoral component line:** Mark medial and lateral edges of the femoral component joint line.
+* **Tibial component line:** Mark medial and lateral edges of the tibial tray joint line.
+* **Tibial axis:** Mark two shaft-center points on the visible tibia.
+
+**Calculated Parameters**
+* **Femoral Component Alignment:** Angle between femoral anatomical axis and femoral component joint line.
+* **Femoral Deviation From Perpendicular:** Absolute deviation from 90°.
+* **Tibial Component Alignment:** Angle between tibial anatomical axis and tibial tray joint line.
+* **Tibial Deviation From Perpendicular:** Absolute deviation from 90°.
+
+**Notes**
+This complements the lateral Knee Arthroplasty – Sagittal Balance template, which includes posterior tibial slope and femoral component flexion.
+""",
+
     'glenoid_bone_loss': """
 **Glenoid Bone Loss Measurement**
 This template quantifies anterior glenoid bone loss using the best-fit circle method, a widely accepted technique in shoulder instability assessment.
@@ -290,12 +349,79 @@ Significance: Restoration of PFCO is critical for maximizing knee flexion.
 2. Malviya, A., et al. (2009). Predicting range of movement after knee replacement: the importance of posterior condylar offset and tibial slope. KSSTA, 17(5), 491–498. https://doi.org/10.1007/s00167-008-0712-x
 3. Renieris, G., et al. (2025). Evaluation of component alignment in total knee arthroplasty using patient-specific instrumentation versus conventional guides: a retrospective study. SICOT-J, 11, 44. https://doi.org/10.1051/sicotj/2025044
 """,
+    'calcaneus_angles': """
+**Calcaneus – Böhler & Gissane Angles**
+Evaluates posterior facet depression in intra-articular calcaneal fractures on a true lateral radiograph of the ankle/calcaneus.
+
+**Point Placement**
+*   **Point 1 – Tuberosity Superior:** Most superior point of the posterior calcaneal tuberosity.
+*   **Point 2 – Posterior Facet Apex:** Highest point of the posterior subtalar facet.
+*   **Point 3 – Anterior Process Apex:** Highest point of the anterior process.
+*   **Point 4 – Critical Angle Apex:** Apex of the angle formed by the posterior facet and the sulcus calcanei (beak of Gissane).
+
+**Calculated Parameters**
+• **Böhler's Angle:** Angle between the line Tuberosity → Posterior Facet and the line Posterior Facet → Anterior Process.
+Normal: 20°–40°. Values < 20° indicate depression of the posterior facet; negative values indicate the facet lies below the tuberosity–anterior process line.
+• **Gissane's Angle (Critical Angle):** Angle at the critical angle apex between the posterior facet and the anterior process.
+Normal: ~95°–130°. An increased angle suggests posterior facet depression.
+
+**Notes**
+*   Requires a true lateral view; rotation alters both angles.
+*   The sign of Böhler's angle assumes an upright image orientation (dorsal side up).
+*   Compare with the contralateral side when available, as normal ranges vary.
+
+**References:**
+1. Böhler, L. (1931). Diagnosis, pathology, and treatment of fractures of the os calcis. JBJS, 13(1), 75–89.
+""",
+
+    'spondylolisthesis': """
+**Spondylolisthesis**
+Quantifies anterior translation and lumbosacral kyphosis of a slipped vertebra (typically L5 on S1, but applicable to any lumbar level) on a standing lateral radiograph.
+
+**Point Placement**
+*   **Point 1 – Lower Vertebra Post-Sup:** Posterior-superior corner of the lower vertebra (e.g. S1).
+*   **Point 2 – Lower Vertebra Ant-Sup:** Anterior-superior corner of the lower vertebra.
+    *   *Points 1–2 define the superior endplate (reference line) and its AP width.*
+*   **Point 3 – Upper Vertebra Post-Inf:** Posterior-inferior corner of the slipped vertebra (e.g. L5).
+*   **Point 4 – Upper Vertebra Ant-Inf:** Anterior-inferior corner of the slipped vertebra.
+*   **Point 5 – Lower Vertebra Posterior Wall:** A caudal point on the posterior wall of the lower vertebra.
+
+**Calculated Parameters**
+• **Slip (%) / Meyerding Grade:** Distance from Point 1 to the projection of Point 3 on the lower endplate, divided by the endplate width.
+Grade I: 0–25% · Grade II: 25–50% · Grade III: 50–75% · Grade IV: 75–100% · Grade V: > 100% (spondyloptosis). Negative values indicate retrolisthesis.
+• **Slip Distance:** Absolute translation in mm (requires calibration).
+• **Segmental Lordosis:** Angle between the inferior endplate of the slipped vertebra and the superior endplate of the lower vertebra. Positive = lordosis, negative = kyphosis.
+• **Slip Angle (Boxall):** Angle between the inferior endplate of the slipped vertebra and a line perpendicular to the posterior wall of the lower vertebra. Positive = kyphotic. Increasing kyphotic slip angle is associated with instability and progression in high-grade slips.
+
+**Notes**
+*   In high-grade slips with a dome-shaped sacrum, mark the original posterior-superior corner of S1 as accurately as possible.
+*   Standing radiographs better reflect slip magnitude than supine images.
+
+**References:**
+1. Meyerding, H. W. (1932). Spondylolisthesis. Surgery, Gynecology & Obstetrics, 54, 371–377.
+2. Boxall, D., et al. (1979). Management of severe spondylolisthesis in children and adolescents. JBJS Am, 61(4), 479–495.
+3. Labelle, H., et al. (2004). Spondylolisthesis, pelvic incidence, and spinopelvic balance: a correlation study. Spine, 29(18), 2049–2054.
+""",
   };
 
   static const Map<String, String> shortDescriptions = {
-    'glenoid_version': 'Calculate Version, Medialization & Subluxation (Friedman Method) using 5 points.',
-    'glenoid_planning_ap': 'RSA, ASA, Lateralization, and Distalization analysis',
-    'lower_limb_deformity': 'Comprehensive analysis of alignment and deformity using 11 anatomical landmarks.',
-    'knee_sagittal_balance': 'Evaluate Tibial Slope, Femoral Flexion, and Posterior Offset on lateral knee radiographs.',
+    'glenoid_version':
+        'Calculate Version, Medialization & Subluxation (Friedman Method) using 5 points.',
+    'glenoid_planning_ap':
+        'RSA, ASA, Lateralization, and Distalization analysis',
+    'cervical_spine_lateral':
+        'C2-C7 Cobb lordosis, C2-C7 SVA, and T1 slope on standing lateral cervical radiographs.',
+    'tha_cup_position':
+        'Post-op THA cup inclination and radiographic version approximation on AP pelvis.',
+    'tka_coronal_alignment':
+        'Post-op TKA femoral and tibial component coronal alignment on AP knee radiographs.',
+    'lower_limb_deformity':
+        'Comprehensive analysis of alignment and deformity using 11 anatomical landmarks.',
+    'knee_sagittal_balance':
+        'Evaluate Tibial Slope, Femoral Flexion, and Posterior Offset on lateral knee radiographs.',
+    'calcaneus_angles':
+        "Böhler's and Gissane's angles for calcaneal fractures on lateral radiographs.",
+    'spondylolisthesis':
+        'Meyerding slip %, segmental lordosis, and Boxall slip angle on lateral lumbar radiographs.',
   };
 }

@@ -5,7 +5,9 @@ import 'package:ortho_quant_md/main.dart'; // import to access global `cameras`
 import 'dart:io';
 
 class CameraScreen extends StatefulWidget {
-  const CameraScreen({super.key});
+  const CameraScreen({super.key, this.camera});
+
+  final CameraDescription? camera;
 
   @override
   State<CameraScreen> createState() => _CameraScreenState();
@@ -17,7 +19,7 @@ class _CameraScreenState extends State<CameraScreen> {
   XFile? _capturedImage;
   Offset? _focusPoint;
   bool _showFocusCircle = false;
-
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -26,10 +28,17 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> _initCamera() async {
-    if (cameras.isEmpty) return;
-    // Use the first camera (usually back camera)
+    final selectedCamera =
+        widget.camera ?? (cameras.isNotEmpty ? cameras[0] : null);
+    if (selectedCamera == null) {
+      setState(() {
+        _errorMessage = 'No camera source found.';
+      });
+      return;
+    }
+
     _controller = CameraController(
-      cameras[0],
+      selectedCamera,
       ResolutionPreset.high,
       enableAudio: false,
     );
@@ -42,6 +51,11 @@ class _CameraScreenState extends State<CameraScreen> {
       });
     } catch (e) {
       debugPrint('Camera init error: $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Camera could not be started.';
+        });
+      }
     }
   }
 
@@ -66,7 +80,10 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
 
-  Future<void> _onTap(TapDownDetails details, BoxConstraints constraints) async {
+  Future<void> _onTap(
+    TapDownDetails details,
+    BoxConstraints constraints,
+  ) async {
     if (_controller == null || !_controller!.value.isInitialized) return;
 
     final Offset offset = Offset(
@@ -77,13 +94,13 @@ class _CameraScreenState extends State<CameraScreen> {
     try {
       await _controller!.setExposurePoint(offset);
       await _controller!.setFocusPoint(offset);
-      
+
       if (mounted) {
         setState(() {
           _focusPoint = details.localPosition;
           _showFocusCircle = true;
         });
-        
+
         // Hide focus circle after 1.5 seconds
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (mounted) {
@@ -105,20 +122,19 @@ class _CameraScreenState extends State<CameraScreen> {
       sourcePath: _capturedImage!.path,
       uiSettings: [
         AndroidUiSettings(
-            toolbarTitle: 'Crop Image',
-            toolbarColor: Colors.black,
-            toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.original,
-            lockAspectRatio: false),
-        IOSUiSettings(
-          title: 'Crop Image',
+          toolbarTitle: 'Crop Image',
+          toolbarColor: Colors.black,
+          toolbarWidgetColor: Colors.white,
+          initAspectRatio: CropAspectRatioPreset.original,
+          lockAspectRatio: false,
         ),
+        IOSUiSettings(title: 'Crop Image'),
       ],
     );
 
     if (croppedFile != null) {
       setState(() {
-        _capturedImage = XFile(croppedFile.path); 
+        _capturedImage = XFile(croppedFile.path);
       });
     }
   }
@@ -126,7 +142,7 @@ class _CameraScreenState extends State<CameraScreen> {
   void _retakePicture() {
     setState(() {
       _capturedImage = null;
-      // Re-initialize or resume preview if needed? 
+      // Re-initialize or resume preview if needed?
       // CameraController keeps running, we just hid the preview.
     });
   }
@@ -139,10 +155,24 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isInit || _controller == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+    if (_errorMessage != null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+        ),
       );
+    }
+
+    if (!_isInit || _controller == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_capturedImage != null) {
@@ -171,7 +201,11 @@ class _CameraScreenState extends State<CameraScreen> {
                       child: const Text('Retake'),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.crop, color: Colors.white, size: 28),
+                      icon: const Icon(
+                        Icons.crop,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                       onPressed: _cropImage,
                       tooltip: 'Crop Image',
                     ),
@@ -180,7 +214,10 @@ class _CameraScreenState extends State<CameraScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 12,
+                        ),
                       ),
                       child: const Text('Use Photo'),
                     ),
@@ -224,16 +261,15 @@ class _CameraScreenState extends State<CameraScreen> {
               );
             },
           ),
-          
+
           // Grid Overlay
           Positioned.fill(
-            child: IgnorePointer( // Ensure taps pass through to GestureDetector
-              child: CustomPaint(
-                painter: GridPainter(),
-              ),
+            child: IgnorePointer(
+              // Ensure taps pass through to GestureDetector
+              child: CustomPaint(painter: GridPainter()),
             ),
           ),
-          
+
           // Back Button
           Positioned(
             top: 40,
@@ -273,12 +309,20 @@ class GridPainter extends CustomPainter {
     // Draw vertical lines
     final double colWidth = size.width / 3;
     canvas.drawLine(Offset(colWidth, 0), Offset(colWidth, size.height), paint);
-    canvas.drawLine(Offset(colWidth * 2, 0), Offset(colWidth * 2, size.height), paint);
+    canvas.drawLine(
+      Offset(colWidth * 2, 0),
+      Offset(colWidth * 2, size.height),
+      paint,
+    );
 
     // Draw horizontal lines
     final double rowHeight = size.height / 3;
     canvas.drawLine(Offset(0, rowHeight), Offset(size.width, rowHeight), paint);
-    canvas.drawLine(Offset(0, rowHeight * 2), Offset(size.width, rowHeight * 2), paint);
+    canvas.drawLine(
+      Offset(0, rowHeight * 2),
+      Offset(size.width, rowHeight * 2),
+      paint,
+    );
   }
 
   @override
