@@ -349,6 +349,59 @@ Significance: Restoration of PFCO is critical for maximizing knee flexion.
 2. Malviya, A., et al. (2009). Predicting range of movement after knee replacement: the importance of posterior condylar offset and tibial slope. KSSTA, 17(5), 491–498. https://doi.org/10.1007/s00167-008-0712-x
 3. Renieris, G., et al. (2025). Evaluation of component alignment in total knee arthroplasty using patient-specific instrumentation versus conventional guides: a retrospective study. SICOT-J, 11, 44. https://doi.org/10.1051/sicotj/2025044
 """,
+    'calcaneus_angles': """
+**Calcaneus – Böhler & Gissane Angles**
+Evaluates posterior facet depression in intra-articular calcaneal fractures on a true lateral radiograph of the ankle/calcaneus.
+
+**Point Placement**
+*   **Point 1 – Tuberosity Superior:** Most superior point of the posterior calcaneal tuberosity.
+*   **Point 2 – Posterior Facet Apex:** Highest point of the posterior subtalar facet.
+*   **Point 3 – Anterior Process Apex:** Highest point of the anterior process.
+*   **Point 4 – Critical Angle Apex:** Apex of the angle formed by the posterior facet and the sulcus calcanei (beak of Gissane).
+
+**Calculated Parameters**
+• **Böhler's Angle:** Angle between the line Tuberosity → Posterior Facet and the line Posterior Facet → Anterior Process.
+Normal: 20°–40°. Values < 20° indicate depression of the posterior facet; negative values indicate the facet lies below the tuberosity–anterior process line.
+• **Gissane's Angle (Critical Angle):** Angle at the critical angle apex between the posterior facet and the anterior process.
+Normal: ~95°–130°. An increased angle suggests posterior facet depression.
+
+**Notes**
+*   Requires a true lateral view; rotation alters both angles.
+*   The sign of Böhler's angle assumes an upright image orientation (dorsal side up).
+*   Compare with the contralateral side when available, as normal ranges vary.
+
+**References:**
+1. Böhler, L. (1931). Diagnosis, pathology, and treatment of fractures of the os calcis. JBJS, 13(1), 75–89.
+""",
+
+    'spondylolisthesis': """
+**Spondylolisthesis**
+Quantifies anterior translation and lumbosacral kyphosis of a slipped vertebra (typically L5 on S1, but applicable to any lumbar level) on a standing lateral radiograph.
+
+**Point Placement**
+*   **Point 1 – Lower Vertebra Post-Sup:** Posterior-superior corner of the lower vertebra (e.g. S1).
+*   **Point 2 – Lower Vertebra Ant-Sup:** Anterior-superior corner of the lower vertebra.
+    *   *Points 1–2 define the superior endplate (reference line) and its AP width.*
+*   **Point 3 – Upper Vertebra Post-Inf:** Posterior-inferior corner of the slipped vertebra (e.g. L5).
+*   **Point 4 – Upper Vertebra Ant-Inf:** Anterior-inferior corner of the slipped vertebra.
+*   **Point 5 – Lower Vertebra Posterior Wall:** A caudal point on the posterior wall of the lower vertebra.
+
+**Calculated Parameters**
+• **Slip (%) / Meyerding Grade:** Distance from Point 1 to the projection of Point 3 on the lower endplate, divided by the endplate width.
+Grade I: 0–25% · Grade II: 25–50% · Grade III: 50–75% · Grade IV: 75–100% · Grade V: > 100% (spondyloptosis). Negative values indicate retrolisthesis.
+• **Slip Distance:** Absolute translation in mm (requires calibration).
+• **Segmental Lordosis:** Angle between the inferior endplate of the slipped vertebra and the superior endplate of the lower vertebra. Positive = lordosis, negative = kyphosis.
+• **Slip Angle (Boxall):** Angle between the inferior endplate of the slipped vertebra and a line perpendicular to the posterior wall of the lower vertebra. Positive = kyphotic. Increasing kyphotic slip angle is associated with instability and progression in high-grade slips.
+
+**Notes**
+*   In high-grade slips with a dome-shaped sacrum, mark the original posterior-superior corner of S1 as accurately as possible.
+*   Standing radiographs better reflect slip magnitude than supine images.
+
+**References:**
+1. Meyerding, H. W. (1932). Spondylolisthesis. Surgery, Gynecology & Obstetrics, 54, 371–377.
+2. Boxall, D., et al. (1979). Management of severe spondylolisthesis in children and adolescents. JBJS Am, 61(4), 479–495.
+3. Labelle, H., et al. (2004). Spondylolisthesis, pelvic incidence, and spinopelvic balance: a correlation study. Spine, 29(18), 2049–2054.
+""",
   };
 
   static const Map<String, String> shortDescriptions = {
@@ -366,5 +419,9 @@ Significance: Restoration of PFCO is critical for maximizing knee flexion.
         'Comprehensive analysis of alignment and deformity using 11 anatomical landmarks.',
     'knee_sagittal_balance':
         'Evaluate Tibial Slope, Femoral Flexion, and Posterior Offset on lateral knee radiographs.',
+    'calcaneus_angles':
+        "Böhler's and Gissane's angles for calcaneal fractures on lateral radiographs.",
+    'spondylolisthesis':
+        'Meyerding slip %, segmental lordosis, and Boxall slip angle on lateral lumbar radiographs.',
   };
 }

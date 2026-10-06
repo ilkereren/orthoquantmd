@@ -1345,4 +1345,83 @@ final List<MeasurementTemplate> appTemplates = [
     calculations: [], // Modular template handles calculations logic
     isPremium: true,
   ),
+  MeasurementTemplate(
+    id: 'calcaneus_angles',
+    title: 'Calcaneus – Böhler & Gissane',
+    viewInfo: 'Lateral Ankle / Calcaneus',
+    category: JointCategory.foot,
+    icon: mat.Icons.change_history,
+    description: desc.TemplateDescriptions.shortDescriptions['calcaneus_angles'],
+    infoDescription:
+        desc.TemplateDescriptions.infoDescriptions['calcaneus_angles'],
+    landmarks: [
+      TemplateLandmark(
+        id: 'calc_tuber_sup',
+        label: 'Tuberosity Superior',
+        instruction:
+            'Mark most superior point of the posterior calcaneal tuberosity',
+      ),
+      TemplateLandmark(
+        id: 'calc_post_facet',
+        label: 'Posterior Facet Apex',
+        instruction: 'Mark highest point of the posterior subtalar facet',
+      ),
+      TemplateLandmark(
+        id: 'calc_ant_process',
+        label: 'Anterior Process Apex',
+        instruction: 'Mark highest point of the anterior process',
+      ),
+      TemplateLandmark(
+        id: 'calc_gissane_apex',
+        label: 'Critical Angle Apex',
+        instruction:
+            'Mark apex of the critical angle (junction of posterior facet and sulcus calcanei)',
+      ),
+    ],
+    calculations: [], // Modular template handles calculations logic
+    isPremium: true,
+  ),
+  MeasurementTemplate(
+    id: 'spondylolisthesis',
+    title: 'Spondylolisthesis',
+    viewInfo: 'Lateral Lumbar Spine',
+    category: JointCategory.spine,
+    icon: mat.Icons.view_agenda_outlined,
+    description:
+        desc.TemplateDescriptions.shortDescriptions['spondylolisthesis'],
+    infoDescription:
+        desc.TemplateDescriptions.infoDescriptions['spondylolisthesis'],
+    landmarks: [
+      TemplateLandmark(
+        id: 'lower_post_sup',
+        label: 'Lower Vertebra Post-Sup',
+        instruction:
+            'Mark posterior-superior corner of the LOWER vertebra (e.g. S1)',
+      ),
+      TemplateLandmark(
+        id: 'lower_ant_sup',
+        label: 'Lower Vertebra Ant-Sup',
+        instruction: 'Mark anterior-superior corner of the LOWER vertebra',
+      ),
+      TemplateLandmark(
+        id: 'upper_post_inf',
+        label: 'Upper Vertebra Post-Inf',
+        instruction:
+            'Mark posterior-inferior corner of the SLIPPED vertebra (e.g. L5)',
+      ),
+      TemplateLandmark(
+        id: 'upper_ant_inf',
+        label: 'Upper Vertebra Ant-Inf',
+        instruction: 'Mark anterior-inferior corner of the SLIPPED vertebra',
+      ),
+      TemplateLandmark(
+        id: 'lower_post_inf',
+        label: 'Lower Vertebra Posterior Wall',
+        instruction:
+            'Mark a caudal point on the posterior wall of the LOWER vertebra',
+      ),
+    ],
+    calculations: [], // Modular template handles calculations logic
+    isPremium: true,
+  ),
 ];

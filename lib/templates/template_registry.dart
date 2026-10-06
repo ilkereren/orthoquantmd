@@ -9,8 +9,10 @@ import 'elbow/carrying_angle_template.dart';
 import 'foot/hallux_valgus_template.dart';
 import 'foot/flatfoot_lat_template.dart';
 import 'foot/flatfoot_ap_template.dart';
+import 'foot/calcaneus_angles_template.dart';
 import 'spine/spinopelvic_template.dart';
 import 'spine/cervical_spine_lateral_template.dart';
+import 'spine/spondylolisthesis_template.dart';
 import 'knee/patella_indices_template.dart';
 import 'knee/knee_sagittal_balance_template.dart';
 import 'knee/tka_coronal_alignment_template.dart';
@@ -37,9 +39,11 @@ class TemplateRegistry {
     HalluxValgusTemplate(),
     FlatfootLatTemplate(),
     FlatfootApTemplate(),
+    CalcaneusAnglesTemplate(),
     // Spine
     SpinopelvicTemplate(),
     CervicalSpineLateralTemplate(),
+    SpondylolisthesisTemplate(),
     // Knee
     PatellaIndicesTemplate(),
     KneeSagittalBalanceTemplate(),
