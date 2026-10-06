@@ -92,3 +92,6 @@ tooling/bin/firebase
 
 # Firebase Functions dependencies
 functions/node_modules/
+
+# Build output kept out of iCloud sync (build -> ~/Library/Caches symlink)
+/build
