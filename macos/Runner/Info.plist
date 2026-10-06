@@ -32,8 +32,6 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
-	<key>NSCameraUsageDescription</key>
-	<string>This app needs access to camera to take photos of medical images.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access to photo library to select images for measurement.</string>
 	<key>NSMicrophoneUsageDescription</key>

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
@@ -29,11 +30,19 @@ class SubscriptionService extends ChangeNotifier {
   bool _initialized = false;
   bool _revenueCatConfigured = false;
   Offerings? _offerings;
+  bool _isLoadingOfferings = false;
+  String? _offeringsError;
+
+  static const Duration _offeringsTimeout = Duration(seconds: 15);
 
   bool get isPro => (kDebugMode && _forceProForTesting) || _isPro;
   bool get isInitialized => _initialized;
   Offerings? get offerings => _offerings;
   bool get canUseRevenueCat => _revenueCatConfigured;
+  bool get isLoadingOfferings => _isLoadingOfferings;
+  String? get offeringsError => _offeringsError;
+  List<Package> get availablePackages =>
+      _offerings?.current?.availablePackages ?? const [];
 
   Future<void> init() async {
     if (_initialized) return;
@@ -78,7 +87,7 @@ class SubscriptionService extends ChangeNotifier {
       await updateSubscriptionStatus();
 
       // Load offerings
-      _offerings = await Purchases.getOfferings();
+      await loadOfferings();
 
       final appUserId = await Purchases.appUserID;
       debugPrint('RevenueCat initialized for User ID: $appUserId');
@@ -89,6 +98,36 @@ class SubscriptionService extends ChangeNotifier {
       _revenueCatConfigured = false;
       _initialized = true;
       debugPrint('Error initializing RevenueCat: $e');
+    }
+  }
+
+  /// Fetches offerings with a timeout so the paywall never waits forever.
+  /// Sets [offeringsError] when nothing could be loaded.
+  Future<void> loadOfferings() async {
+    if (_isLoadingOfferings) return;
+    if (!_revenueCatConfigured) {
+      _offeringsError = 'Subscriptions are currently unavailable.';
+      notifyListeners();
+      return;
+    }
+
+    _isLoadingOfferings = true;
+    _offeringsError = null;
+    notifyListeners();
+
+    try {
+      _offerings = await Purchases.getOfferings().timeout(_offeringsTimeout);
+      if (availablePackages.isEmpty) {
+        _offeringsError = 'No subscription plans are available right now.';
+      }
+    } on TimeoutException {
+      _offeringsError = 'Loading subscription plans timed out.';
+    } catch (e) {
+      debugPrint('Error loading offerings: $e');
+      _offeringsError = 'Could not load subscription plans.';
+    } finally {
+      _isLoadingOfferings = false;
+      notifyListeners();
     }
   }
 

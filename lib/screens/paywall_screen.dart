@@ -14,13 +14,21 @@ class _PaywallScreenState extends State<PaywallScreen> {
   bool _isPurchasing = false;
 
   @override
+  void initState() {
+    super.initState();
+    final service = SubscriptionService();
+    if (service.availablePackages.isEmpty && !service.isLoadingOfferings) {
+      service.loadOfferings();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: SubscriptionService(),
       builder: (context, _) {
-        final offerings = SubscriptionService().offerings;
-        final currentOffering = offerings?.current;
-        final packages = currentOffering?.availablePackages ?? [];
+        final service = SubscriptionService();
+        final packages = service.availablePackages;
 
         return Scaffold(
           body: Container(
@@ -112,9 +120,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
                                 const SizedBox(height: 32),
                                 // Pricing Cards
-                                if (packages.isEmpty)
+                                if (packages.isEmpty &&
+                                    service.isLoadingOfferings)
                                   const Center(
                                     child: CircularProgressIndicator(),
+                                  )
+                                else if (packages.isEmpty)
+                                  _buildOfferingsUnavailable(
+                                    service.offeringsError ??
+                                        'Subscription plans are unavailable.',
                                   )
                                 else
                                   ...packages.map(
@@ -473,6 +487,40 @@ Reasoning/Importance:
     } catch (e) {
       debugPrint('Error launching email: $e');
     }
+  }
+
+  Widget _buildOfferingsUnavailable(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.cloud_off_rounded, color: Colors.grey, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Please check your internet connection and try again.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => SubscriptionService().loadOfferings(),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Try Again'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildFeatureItem(IconData icon, String title, String subtitle) {
