@@ -5,10 +5,10 @@ class MainFlutterWindow: NSWindow {
   override func awakeFromNib() {
     let flutterViewController = FlutterViewController()
     
-    // Set size for iPad 13" aspect ratio (logical points: 1024 x 1366)
+    // Open in a roomy iPad-like landscape layout, while keeping resizing free.
     let screenSize = NSScreen.main?.visibleFrame.size ?? CGSize(width: 1920, height: 1080)
-    let targetHeight: CGFloat = screenSize.height * 0.9 
-    let targetWidth: CGFloat = targetHeight * (1024.0 / 1366.0)
+    let targetWidth: CGFloat = min(1180, screenSize.width * 0.86)
+    let targetHeight: CGFloat = min(820, screenSize.height * 0.82)
     
     // Define the frame
     let windowFrame = NSRect(
@@ -20,20 +20,12 @@ class MainFlutterWindow: NSWindow {
     
     self.contentViewController = flutterViewController
     self.setFrame(windowFrame, display: true)
-    
-    // LOCK ASPECT RATIO
-    self.contentAspectRatio = NSSize(width: 1024, height: 1366)
-    
-    // Optional: If you want to prevent ANY resizing to keep it perfectly at this size:
-    // self.styleMask.remove(.resizable)
-    
-    // Or set min/max to maintain scale but keep ratio
-    self.minSize = NSSize(width: 400 * (1024.0/1366.0), height: 400)
-    
-    // Make it "penceresiz" (borderless/clean look)
+    self.minSize = NSSize(width: 780, height: 560)
+
+    // Keep a native titlebar so the macOS traffic-light buttons do not overlap
+    // the Flutter top toolbar.
     self.titleVisibility = .hidden
-    self.titlebarAppearsTransparent = true
-    self.styleMask.insert(.fullSizeContentView)
+    self.titlebarAppearsTransparent = false
 
     RegisterGeneratedPlugins(registry: flutterViewController)
 
