@@ -46,7 +46,66 @@ This template evaluates glenoid version, medialization, and humeral head subluxa
 2. Walch, G., et al. (1999). Morphologic study of the glenoid in primary glenohumeral osteoarthritis. J Arthroplasty, 14(6), 756–760. https://doi.org/10.1016/s0883-5403(99)90232-2
 3. Campbell, B. R., et al. (2025). Clinical and radiographic outcomes of shoulder hemiarthroplasty for patients with glenoid medialization. JSES, 34(1), e15–e21. https://doi.org/10.1016/j.jse.2024.03.010
 """,
-    
+
+    'cervical_spine_lateral': """
+**Cervical Spine Lateral**
+
+Standing lateral cervical radiograph template for sagittal alignment assessment.
+
+**Point Placement**
+* **C2 inferior endplate:** Mark posterior and anterior corners of the C2 inferior endplate.
+* **C7 inferior endplate:** Mark posterior and anterior corners of the C7 inferior endplate.
+* **C2 centroid:** Mark the center of the C2 vertebral body.
+* **C7 posterior-superior corner:** Mark the posterior-superior corner of C7 for the SVA reference.
+* **T1 superior endplate:** Mark posterior and anterior corners of the T1 superior endplate.
+**Calculated Parameters**
+* **C2-C7 Cobb Lordosis:** Cobb angle between the C2 and C7 inferior endplates.
+* **C2-C7 Sagittal Vertical Axis:** Horizontal offset between the C2 centroid plumb line and the C7 posterior-superior corner. Reported in mm when calibrated, otherwise px.
+* **T1 Slope:** Angle of the T1 superior endplate relative to the horizontal.
+
+**Notes**
+Projection, posture, and incomplete visualization of C7/T1 can substantially affect sagittal measurements. Use calibration if millimeter SVA reporting is needed.
+""",
+
+    'tha_cup_position': """
+**THA Cup Position**
+
+Post-operative AP pelvis template for acetabular cup position checks.
+
+**Point Placement**
+* **Pelvic reference:** Mark the inferior points of the right and left teardrops.
+* **Cup opening line:** Mark the medial and lateral edges of the projected cup opening.
+* **Cup projected ellipse:** Mark the two endpoints of the projected short axis of the cup ellipse.
+
+**Calculated Parameters**
+* **Cup Inclination:** Angle between the inter-teardrop pelvic reference line and the cup opening line.
+* **Cup Version Approximation:** Estimated from the ratio of the projected ellipse short axis to the cup opening long axis.
+
+**Notes**
+The version value is an AP radiographic approximation and is sensitive to pelvic tilt, rotation, beam centering, and how the cup ellipse is identified.
+""",
+
+    'tka_coronal_alignment': """
+**TKA Component Alignment**
+
+Standing AP knee template for post-operative coronal component alignment checks.
+
+**Point Placement**
+* **Femoral axis:** Mark two shaft-center points on the visible femur.
+* **Femoral component line:** Mark medial and lateral edges of the femoral component joint line.
+* **Tibial component line:** Mark medial and lateral edges of the tibial tray joint line.
+* **Tibial axis:** Mark two shaft-center points on the visible tibia.
+
+**Calculated Parameters**
+* **Femoral Component Alignment:** Angle between femoral anatomical axis and femoral component joint line.
+* **Femoral Deviation From Perpendicular:** Absolute deviation from 90°.
+* **Tibial Component Alignment:** Angle between tibial anatomical axis and tibial tray joint line.
+* **Tibial Deviation From Perpendicular:** Absolute deviation from 90°.
+
+**Notes**
+This complements the lateral Knee Arthroplasty – Sagittal Balance template, which includes posterior tibial slope and femoral component flexion.
+""",
+
     'glenoid_bone_loss': """
 **Glenoid Bone Loss Measurement**
 This template quantifies anterior glenoid bone loss using the best-fit circle method, a widely accepted technique in shoulder instability assessment.
@@ -293,9 +352,19 @@ Significance: Restoration of PFCO is critical for maximizing knee flexion.
   };
 
   static const Map<String, String> shortDescriptions = {
-    'glenoid_version': 'Calculate Version, Medialization & Subluxation (Friedman Method) using 5 points.',
-    'glenoid_planning_ap': 'RSA, ASA, Lateralization, and Distalization analysis',
-    'lower_limb_deformity': 'Comprehensive analysis of alignment and deformity using 11 anatomical landmarks.',
-    'knee_sagittal_balance': 'Evaluate Tibial Slope, Femoral Flexion, and Posterior Offset on lateral knee radiographs.',
+    'glenoid_version':
+        'Calculate Version, Medialization & Subluxation (Friedman Method) using 5 points.',
+    'glenoid_planning_ap':
+        'RSA, ASA, Lateralization, and Distalization analysis',
+    'cervical_spine_lateral':
+        'C2-C7 Cobb lordosis, C2-C7 SVA, and T1 slope on standing lateral cervical radiographs.',
+    'tha_cup_position':
+        'Post-op THA cup inclination and radiographic version approximation on AP pelvis.',
+    'tka_coronal_alignment':
+        'Post-op TKA femoral and tibial component coronal alignment on AP knee radiographs.',
+    'lower_limb_deformity':
+        'Comprehensive analysis of alignment and deformity using 11 anatomical landmarks.',
+    'knee_sagittal_balance':
+        'Evaluate Tibial Slope, Femoral Flexion, and Posterior Offset on lateral knee radiographs.',
   };
 }

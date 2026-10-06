@@ -36,58 +36,85 @@ abstract class MeasurementTemplateBase {
   /// [scale]: Current view scale factor.
   /// [paint]: Base paint style (color, stroke width).
   /// [imageRect]: The rect of the image on screen.
-  void paint(Canvas canvas, List<ReferencePoint> points, double scale, Paint paint, Rect imageRect);
+  void paint(
+    Canvas canvas,
+    List<ReferencePoint> points,
+    double scale,
+    Paint paint,
+    Rect imageRect,
+  );
 
   /// Performs calculations based on the placed points.
   /// Returns a list of calculation results to be displayed.
   /// Each result can be a formatted string or a structured object.
-  List<String> calculate(List<ReferencePoint> points, Rect imageRect, {double? pixelsPerMm});
+  List<String> calculate(
+    List<ReferencePoint> points,
+    Rect imageRect, {
+    double? pixelsPerMm,
+  });
 
   /// Custom Result Box Builder
   /// Standardized logic for displaying results. Templates can override this if needed.
-  Widget buildResultBox(BuildContext context, List<String> results, VoidCallback onClose) {
-      // Default Parsing: Expects "Label: Value" string format
-      final items = results.map((r) {
-          final parts = r.split(': ');
-          if (parts.length >= 2) {
-              return {'label': parts[0], 'value': parts.sublist(1).join(': ')};
-          }
-          return {'label': r, 'value': ''};
-      }).toList();
+  Widget buildResultBox(
+    BuildContext context,
+    List<String> results,
+    VoidCallback onClose,
+  ) {
+    // Default Parsing: Expects "Label: Value" string format
+    final items = results.map((r) {
+      final parts = r.split(': ');
+      if (parts.length >= 2) {
+        return {'label': parts[0], 'value': parts.sublist(1).join(': ')};
+      }
+      return {'label': r, 'value': ''};
+    }).toList();
 
-      return TemplateResultBox(
-          title: title,
-          items: items,
-          onClose: onClose,
-      );
+    return TemplateResultBox(title: title, items: items, onClose: onClose);
   }
-  
+
   /// Helper to convert normalized points to screen coordinates
   Offset denormalize(Offset p, Rect imageRect) {
-     if (imageRect.isEmpty) return p;
-     return Offset(
-       imageRect.left + p.dx * imageRect.width, 
-       imageRect.top + p.dy * imageRect.height
-     );
+    if (imageRect.isEmpty) return p;
+    return Offset(
+      imageRect.left + p.dx * imageRect.width,
+      imageRect.top + p.dy * imageRect.height,
+    );
   }
 
   /// Draws a dashed line between two points.
-  void paintDashedLine(Canvas canvas, Offset p1, Offset p2, Paint paint, {double dashWidth = 10.0, double dashSpace = 5.0}) {
+  void paintDashedLine(
+    Canvas canvas,
+    Offset p1,
+    Offset p2,
+    Paint paint, {
+    double dashWidth = 10.0,
+    double dashSpace = 5.0,
+  }) {
     var max = (p2 - p1).distance;
     if (max == 0) return;
     final normalized = (p2 - p1) / max;
-    
+
     double distance = 0.0;
     while (distance < max) {
       final lineStart = p1 + normalized * distance;
-      final lineEnd = p1 + normalized * (distance + dashWidth > max ? max : distance + dashWidth);
+      final lineEnd =
+          p1 +
+          normalized *
+              (distance + dashWidth > max ? max : distance + dashWidth);
       canvas.drawLine(lineStart, lineEnd, paint);
       distance += dashWidth + dashSpace;
     }
   }
 
   /// Draws a line between p1 and p2, extending it infinitely with dashed lines.
-  void paintExtendedLine(Canvas canvas, Offset p1, Offset p2, Rect imageRect, Paint paint, {bool isDashed = false}) {
+  void paintExtendedLine(
+    Canvas canvas,
+    Offset p1,
+    Offset p2,
+    Rect imageRect,
+    Paint paint, {
+    bool isDashed = false,
+  }) {
     // 1. Core segment
     if (isDashed) {
       paintDashedLine(canvas, p1, p2, paint);
