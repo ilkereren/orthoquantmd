@@ -1294,29 +1294,27 @@ Reasoning/Importance:
                   ),
                   const SizedBox(height: 18),
                   const _WhatsNewItem(
-                    title: 'AI implementation',
-                    detail:
-                        'OrthoQuant AI can now interpret measurement results '
-                        'with physician-verification guidance and configurable '
-                        'AI settings.',
-                  ),
-                  const _WhatsNewItem(
                     title: 'New clinical templates',
                     detail:
-                        'Cervical Spine Lateral, Post-op Hip Arthroplasty '
-                        'Checks, and TKA Alignment Checks are now available.',
+                        "Calcaneus (Böhler's and Gissane's angles) and "
+                        'Spondylolisthesis (Meyerding slip %, segmental '
+                        'lordosis, and slip angle) are now available.',
                   ),
                   const _WhatsNewItem(
-                    title: 'Native Apple platform updates',
+                    title: 'NEW badges',
                     detail:
-                        'macOS App Store groundwork and iPadOS compatibility '
-                        'improvements are included in this release.',
+                        'Newly added templates are highlighted in the '
+                        'template menu.',
                   ),
                   const _WhatsNewItem(
-                    title: 'Android compatibility (upcoming)',
+                    title: 'More reliable subscriptions',
                     detail:
-                        'Camera, gallery import, and image sharing/opening '
-                        'flows are being prepared for Android devices.',
+                        'Subscription plans load more reliably, with a clear '
+                        'retry option if they cannot be loaded.',
+                  ),
+                  const _WhatsNewItem(
+                    title: 'Mac App Store',
+                    detail: 'OrthoQuant MD is now available on macOS.',
                   ),
                   const SizedBox(height: 8),
                   SizedBox(

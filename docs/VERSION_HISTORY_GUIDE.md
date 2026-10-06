@@ -30,7 +30,15 @@ This file keeps the release-history workflow explicit so the in-app "What's new"
 - Prefer clinical/user benefit language over implementation language.
 - Avoid mentioning local test flags, debug-only behavior, or web-only development fixes unless they are public user features.
 
-## Current v0.7.0 Notes
+## Current v0.7.1 Notes
+
+- New clinical templates: Calcaneus (Böhler's and Gissane's angles) and Spondylolisthesis (Meyerding slip %, segmental lordosis, and slip angle).
+- NEW badge for newly added templates in the template menu.
+- Paywall offerings load with a timeout and a retry option (App Review 2.1(a)).
+- macOS: camera entitlement removed (App Review 2.4.5(i)); available on the Mac App Store.
+- Minor bug fixes and stability improvements.
+
+## v0.7.0 Notes
 
 - AI implementation: OrthoQuant AI can interpret measurement results with physician-verification guidance and configurable AI settings.
 - New clinical templates: Cervical Spine Lateral, Post-op Hip Arthroplasty Checks, and TKA Alignment Checks.
