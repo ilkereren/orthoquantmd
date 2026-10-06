@@ -1499,6 +1499,34 @@ class _MeasurementScreenState extends State<MeasurementScreen>
                                                       softWrap: true,
                                                     ),
                                                   ),
+                                                  if (t.isNew) ...[
+                                                    const SizedBox(width: 8),
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 5,
+                                                            vertical: 1,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(
+                                                          0xFF00BFA5,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              6,
+                                                            ),
+                                                      ),
+                                                      child: const Text(
+                                                        'NEW',
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 8,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                   if (t.isPremium &&
                                                       !SubscriptionService()
                                                           .isPro) ...[

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ortho_quant_md/models/measurement_model.dart';
+import 'package:ortho_quant_md/models/template_model.dart';
 import 'package:ortho_quant_md/templates/foot/calcaneus_angles_template.dart';
 import 'package:ortho_quant_md/templates/spine/spondylolisthesis_template.dart';
 import 'package:ortho_quant_md/templates/template_registry.dart';
@@ -90,5 +91,10 @@ void main() {
   test('new templates are registered', () {
     expect(TemplateRegistry.getById('calcaneus_angles'), isNotNull);
     expect(TemplateRegistry.getById('spondylolisthesis'), isNotNull);
+  });
+
+  test('only the new templates carry the NEW badge', () {
+    final newIds = appTemplates.where((t) => t.isNew).map((t) => t.id);
+    expect(newIds, unorderedEquals(['calcaneus_angles', 'spondylolisthesis']));
   });
 }

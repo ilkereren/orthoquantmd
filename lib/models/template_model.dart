@@ -123,6 +123,9 @@ class MeasurementTemplate {
   final List<TemplateCalculation> calculations;
   final bool isPremium;
 
+  /// Shows a "NEW" badge in the template menu.
+  final bool isNew;
+
   MeasurementTemplate({
     required this.id,
     required this.title,
@@ -134,6 +137,7 @@ class MeasurementTemplate {
     required this.landmarks,
     required this.calculations,
     this.isPremium = false,
+    this.isNew = false,
   });
 }
 
@@ -1351,7 +1355,8 @@ final List<MeasurementTemplate> appTemplates = [
     viewInfo: 'Lateral Ankle / Calcaneus',
     category: JointCategory.foot,
     icon: mat.Icons.change_history,
-    description: desc.TemplateDescriptions.shortDescriptions['calcaneus_angles'],
+    description:
+        desc.TemplateDescriptions.shortDescriptions['calcaneus_angles'],
     infoDescription:
         desc.TemplateDescriptions.infoDescriptions['calcaneus_angles'],
     landmarks: [
@@ -1380,6 +1385,7 @@ final List<MeasurementTemplate> appTemplates = [
     ],
     calculations: [], // Modular template handles calculations logic
     isPremium: true,
+    isNew: true,
   ),
   MeasurementTemplate(
     id: 'spondylolisthesis',
@@ -1423,5 +1429,6 @@ final List<MeasurementTemplate> appTemplates = [
     ],
     calculations: [], // Modular template handles calculations logic
     isPremium: true,
+    isNew: true,
   ),
 ];
