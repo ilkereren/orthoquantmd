@@ -754,20 +754,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _openSurvey() async {
-    final launched = await Navigator.push<bool>(
+    final sent = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (context) => const SurveyScreen()),
     );
-    if (launched == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Your mail app is open — tap Send to share your answers. Thank you!',
-          ),
-          duration: Duration(seconds: 5),
+    if (sent == null || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          sent
+              ? 'Thank you! Your feedback was sent.'
+              : 'Your mail app is open — tap Send to share your answers.',
         ),
-      );
-    }
+        duration: const Duration(seconds: 5),
+      ),
+    );
   }
 
   @override

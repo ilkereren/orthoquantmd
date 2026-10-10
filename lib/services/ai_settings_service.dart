@@ -584,7 +584,7 @@ class AiSettingsService {
     required String templateTitle,
     required List<Map<String, String>> results,
   }) async {
-    final installationId = await _getInstallationId();
+    final installationId = await getInstallationId();
     final response = await http
         .post(
           Uri.parse(orthoQuantProxyUrl),
@@ -602,7 +602,7 @@ class AiSettingsService {
     throw const AiSettingsException('The model returned an empty response.');
   }
 
-  Future<String> _getInstallationId() async {
+  Future<String> getInstallationId() async {
     final prefs = await SharedPreferences.getInstance();
     final existing = prefs.getString(kInstallationIdKey);
     if (existing != null && existing.isNotEmpty) return existing;
