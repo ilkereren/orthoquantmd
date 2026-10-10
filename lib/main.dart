@@ -18,6 +18,7 @@ import 'dart:typed_data';
 import 'package:ortho_quant_md/data/tips_list.dart'; // Import the tips list
 import 'package:receive_sharing_intent/receive_sharing_intent.dart'; // New import
 import 'package:ortho_quant_md/screens/settings_screen.dart'; // Import SettingsScreen
+import 'package:ortho_quant_md/screens/survey_screen.dart';
 import 'package:gal/gal.dart'; // Import for saving to gallery
 import 'package:shared_preferences/shared_preferences.dart'; // Import for prefs
 import 'package:url_launcher/url_launcher.dart';
@@ -752,130 +753,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _launchRewardEmail() async {
-    const String body = """Medical Template Suggestion
-
-Template Name: [e.g., Tibial Slope]
-Clinical Reference (Link/Book):
-Landmark Points (e.g., Center of Talus, Top of Calc):
-1. 
-2. 
-Expected Result (e.g., Angle between A and B):
-
-Reasoning/Importance:
-""";
-
-    final Uri emailLaunchUri = Uri(
-      scheme: 'mailto',
-      path: 'ilker.eren@gmail.com',
-      query:
-          'subject=OrthoQuant MD: Template Development Proposal&body=${Uri.encodeComponent(body)}',
+  Future<void> _openSurvey() async {
+    final launched = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const SurveyScreen()),
     );
-
-    try {
-      if (!await launchUrl(emailLaunchUri)) {
-        debugPrint('Could not launch email client');
-      }
-    } catch (e) {
-      debugPrint('Error launching email: $e');
+    if (launched == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Your mail app is open — tap Send to share your answers. Thank you!',
+          ),
+          duration: Duration(seconds: 5),
+        ),
+      );
     }
-  }
-
-  void _showRewardDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Row(
-          children: [
-            const Icon(Icons.card_giftcard, color: Colors.amber, size: 28),
-            const SizedBox(width: 12),
-            const Text(
-              'Contribute & Earn PRO',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Help us expand our clinical library!',
-              style: TextStyle(
-                color: Color(0xFF00BFA5),
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Suggest a new orthopedic template with clear landmarks and reference logic. If we implement your suggestion, we will gift you:',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.amber,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  '1 MONTH FREE PRO ACCESS',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Your contribution helps orthopedics around the world.',
-              style: TextStyle(
-                color: Colors.white38,
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('LATER', style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _launchRewardEmail();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00BFA5),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text('SEND PROPOSAL'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -893,9 +785,9 @@ Reasoning/Importance:
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.card_giftcard, color: Colors.amber),
-            onPressed: _showRewardDialog,
-            tooltip: 'Get Free Subscription',
+            icon: const Icon(Icons.rate_review_outlined, color: Colors.amber),
+            onPressed: _openSurvey,
+            tooltip: 'Quick Survey',
           ),
           IconButton(
             key: _feedbackKey,
