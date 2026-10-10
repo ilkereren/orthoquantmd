@@ -334,6 +334,28 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       });
       prefs.setBool('home_tutorial_shown_v1', true);
     }
+    await _checkAndShowWhatsNew(prefs, isFirstLaunch: !shown);
+  }
+
+  static const _whatsNewSeenVersionKey = 'whats_new_seen_version';
+
+  // Opens the What's New sheet once after the user updates to a new version.
+  // Fresh installs only record the version so they see the tutorial instead.
+  Future<void> _checkAndShowWhatsNew(
+    SharedPreferences prefs, {
+    required bool isFirstLaunch,
+  }) async {
+    final info = await PackageInfo.fromPlatform();
+    final currentVersion = info.version;
+    final seenVersion = prefs.getString(_whatsNewSeenVersionKey);
+    await prefs.setString(_whatsNewSeenVersionKey, currentVersion);
+    if (isFirstLaunch || seenVersion == currentVersion) return;
+
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        _showWhatsNewSheet();
+      }
+    });
   }
 
   @override
