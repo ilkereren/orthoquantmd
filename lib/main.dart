@@ -1208,27 +1208,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ),
                   const SizedBox(height: 18),
                   const _WhatsNewItem(
-                    title: 'New clinical templates',
+                    title: 'Quick Survey',
                     detail:
-                        "Calcaneus (Böhler's and Gissane's angles) and "
-                        'Spondylolisthesis (Meyerding slip %, segmental '
-                        'lordosis, and slip angle) are now available.',
+                        'Tap the new survey button on the home screen to '
+                        'share your feedback in under a minute.',
                   ),
                   const _WhatsNewItem(
-                    title: 'NEW badges',
+                    title: 'AI interpretation on Mac',
                     detail:
-                        'Newly added templates are highlighted in the '
-                        'template menu.',
+                        'AI interpretation now works out of the box in the '
+                        'Mac App Store version.',
                   ),
                   const _WhatsNewItem(
-                    title: 'More reliable subscriptions',
+                    title: "What's new on update",
                     detail:
-                        'Subscription plans load more reliably, with a clear '
-                        'retry option if they cannot be loaded.',
-                  ),
-                  const _WhatsNewItem(
-                    title: 'Mac App Store',
-                    detail: 'OrthoQuant MD is now available on macOS.',
+                        'This summary now opens automatically after each '
+                        'app update.',
                   ),
                   const SizedBox(height: 8),
                   SizedBox(

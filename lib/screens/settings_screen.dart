@@ -1316,6 +1316,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showVersionHistory(BuildContext context) {
     final List<Map<String, dynamic>> history = [
       {
+        'version': 'v0.7.2',
+        'date': 'Oct 2026',
+        'changes': [
+          'Quick Survey: share your feedback from the home screen in under a minute.',
+          'AI interpretation now works out of the box in the Mac App Store version.',
+          "The What's new summary now opens automatically after an app update.",
+        ],
+      },
+      {
         'version': 'v0.7.1',
         'date': 'Oct 2026',
         'changes': [
