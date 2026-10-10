@@ -3,7 +3,7 @@
   "description": "Firebase Functions backend for OrthoQuant AI proxy",
   "private": true,
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "index.js",
   "scripts": {
