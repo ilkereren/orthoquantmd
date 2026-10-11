@@ -1222,12 +1222,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         'overlay view.',
                   ),
                   const _WhatsNewItem(
-                    title: 'Edit images anytime',
-                    detail:
-                        'Results open on the measurement screen. Reopen a '
-                        'saved measurement and tap Edit images to adjust it.',
-                  ),
-                  const _WhatsNewItem(
                     title: 'Quick Survey',
                     detail:
                         'Tap the new survey button on the home screen to '
