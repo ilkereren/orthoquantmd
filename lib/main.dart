@@ -1212,14 +1212,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     title: 'Multi-Image measurements',
                     detail:
                         'Measure across two CT or MRI slices with '
-                        'step-by-step guidance. Available with PRO.',
-                  ),
-                  const _WhatsNewItem(
-                    title: 'TT-TG distance',
-                    detail:
-                        'The first Multi-Image template: mark the trochlea '
-                        'and tibial tuberosity slices and see both in one '
-                        'overlay view.',
+                        'step-by-step guidance: TT-TG distance and femoral '
+                        'anteversion (Reikerås). Photos are straightened by '
+                        'the monitor corners. Available with PRO.',
                   ),
                   const _WhatsNewItem(
                     title: 'Quick Survey',

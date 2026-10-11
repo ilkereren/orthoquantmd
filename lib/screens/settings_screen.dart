@@ -1319,8 +1319,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'version': 'v0.8.0',
         'date': 'Oct 2026',
         'changes': [
-          'Multi-Image measurements (PRO): measure across two CT/MRI slices with step-by-step guidance.',
-          'First Multi-Image template: TT-TG distance, with an overlay view of both slices.',
+          'Multi-Image measurements (PRO): measure across two CT/MRI slices with step-by-step guidance — TT-TG distance and femoral anteversion (Reikerås). Photos are straightened by the monitor corners.',
           'Quick Survey: share your feedback from the home screen in under a minute.',
           'AI interpretation now works out of the box in the Mac App Store version.',
           "The What's new summary now opens automatically after an app update.",
