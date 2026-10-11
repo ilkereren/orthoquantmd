@@ -1239,6 +1239,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         'This summary now opens automatically after each '
                         'app update.',
                   ),
+                  const _WhatsNewItem(
+                    title: 'Bug fix',
+                    detail:
+                        'Fixed a crash on launch on iOS 27 devices.',
+                  ),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,

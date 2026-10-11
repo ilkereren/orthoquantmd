@@ -1324,6 +1324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Quick Survey: share your feedback from the home screen in under a minute.',
           'AI interpretation now works out of the box in the Mac App Store version.',
           "The What's new summary now opens automatically after an app update.",
+          'Fixed a crash on launch on iOS 27 devices.',
         ],
       },
       {

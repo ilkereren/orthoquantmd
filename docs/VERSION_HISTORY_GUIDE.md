@@ -36,6 +36,7 @@ This file keeps the release-history workflow explicit so the in-app "What's new"
 - First Multi-Image template: TT-TG distance with an overlay view of both slices.
 - DONE opens the combined view on the standard measurement screen; saved records keep the images and points, and Edit images reopens them.
 - Includes the unreleased 0.7.2 changes: Quick Survey, AI interpretation on the Mac App Store version, and What's new opening automatically after an update.
+- Bug fix: launch crash on iOS 27 (0.7.1 was built with the iOS 27 SDK without UIScene lifecycle adoption). iOS now uses `SceneDelegate` (Flutter 3.47.7); Swift Package Manager is disabled so plugins stay on CocoaPods only.
 
 ## v0.7.1 Notes
 
