@@ -1209,22 +1209,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ),
                   const SizedBox(height: 18),
                   const _WhatsNewItem(
-                    title: 'Quick Survey',
+                    title: 'Multi-Image measurements',
                     detail:
-                        'Tap the new survey button on the home screen to '
-                        'share your feedback in under a minute.',
+                        'Measure across two CT or MRI slices with '
+                        'step-by-step guidance. Available with PRO.',
                   ),
                   const _WhatsNewItem(
-                    title: 'AI interpretation on Mac',
+                    title: 'TT-TG distance',
                     detail:
-                        'AI interpretation now works out of the box in the '
-                        'Mac App Store version.',
+                        'The first Multi-Image template: mark the trochlea '
+                        'and tibial tuberosity slices and see both in one '
+                        'overlay view.',
                   ),
                   const _WhatsNewItem(
-                    title: "What's new on update",
+                    title: 'Edit images anytime',
                     detail:
-                        'This summary now opens automatically after each '
-                        'app update.',
+                        'Results open on the measurement screen. Reopen a '
+                        'saved measurement and tap Edit images to adjust it.',
                   ),
                   const SizedBox(height: 8),
                   SizedBox(

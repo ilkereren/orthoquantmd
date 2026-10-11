@@ -1316,6 +1316,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showVersionHistory(BuildContext context) {
     final List<Map<String, dynamic>> history = [
       {
+        'version': 'v0.8.0',
+        'date': 'Oct 2026',
+        'changes': [
+          'Multi-Image measurements (PRO): measure across two CT/MRI slices with step-by-step guidance.',
+          'First Multi-Image template: TT-TG distance, with an overlay view of both slices.',
+          'Results open on the measurement screen; reopen saved measurements and tap Edit images to adjust points.',
+        ],
+      },
+      {
         'version': 'v0.7.2',
         'date': 'Oct 2026',
         'changes': [
@@ -1560,7 +1569,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: item['version'] == 'v0.7.1'
+                  color: item['version'] == 'v0.8.0'
                       ? const Color(0xFF00BFA5)
                       : Colors.white24,
                   shape: BoxShape.circle,
@@ -1586,7 +1595,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       item['version'],
                       style: TextStyle(
-                        color: item['version'] == 'v0.7.1'
+                        color: item['version'] == 'v0.8.0'
                             ? const Color(0xFF00BFA5)
                             : Colors.white,
                         fontWeight: FontWeight.bold,

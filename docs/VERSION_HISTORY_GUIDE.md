@@ -30,7 +30,13 @@ This file keeps the release-history workflow explicit so the in-app "What's new"
 - Prefer clinical/user benefit language over implementation language.
 - Avoid mentioning local test flags, debug-only behavior, or web-only development fixes unless they are public user features.
 
-## Current v0.7.1 Notes
+## Current v0.8.0 Notes
+
+- Multi-Image measurements (PRO): a step-by-step flow across two images (photo or gallery), each calibrated on its own.
+- First Multi-Image template: TT-TG distance with an overlay view of both slices.
+- DONE opens the combined view on the standard measurement screen; saved records keep the images and points, and Edit images reopens them.
+
+## v0.7.1 Notes
 
 - New clinical templates: Calcaneus (Böhler's and Gissane's angles) and Spondylolisthesis (Meyerding slip %, segmental lordosis, and slip angle).
 - NEW badge for newly added templates in the template menu.
