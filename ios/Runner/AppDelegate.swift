@@ -4,19 +4,31 @@ import UIKit
 import UserNotifications
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  private var fileChannel: FlutterMethodChannel?
+  // Calls made before the Flutter engine exists (e.g. a URL on cold launch).
+  private var pendingFileChannelCalls: [(method: String, arguments: Any?)] = []
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    
+
     UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
-    
-    let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-    let fileChannel = FlutterMethodChannel(name: "com.orthoquant.md/file_open",
-                                          binaryMessenger: controller.binaryMessenger)
-    
-    fileChannel.setMethodCallHandler({
+
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  // Under the UIScene lifecycle the engine is created by the storyboard's
+  // FlutterViewController, so window?.rootViewController is not available in
+  // didFinishLaunching. Plugins and channels are registered here instead.
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+
+    let channel = FlutterMethodChannel(name: "com.orthoquant.md/file_open",
+                                       binaryMessenger: engineBridge.applicationRegistrar.messenger())
+
+    channel.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if call.method == "getInitialFile" {
         let appGroupId = "group.com.ilkereren.orthoquant"
@@ -46,56 +58,64 @@ import UserNotifications
       }
     })
 
-    GeneratedPluginRegistrant.register(with: self)
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    fileChannel = channel
+    for call in pendingFileChannelCalls {
+      channel.invokeMethod(call.method, arguments: call.arguments)
+    }
+    pendingFileChannelCalls.removeAll()
   }
 
-  override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+  private func invokeFileChannel(_ method: String, arguments: Any? = nil) {
+    if let fileChannel = fileChannel {
+      fileChannel.invokeMethod(method, arguments: arguments)
+    } else {
+      pendingFileChannelCalls.append((method: method, arguments: arguments))
+    }
+  }
+
+  /// Handles ShareMedia and file URLs. Called from SceneDelegate, which
+  /// receives URL opens under the UIScene lifecycle. Returns false for URLs
+  /// that should be passed on to plugins.
+  func handleIncomingURL(_ url: URL) -> Bool {
     // Check for ShareMedia custom scheme
     if let scheme = url.scheme, scheme.caseInsensitiveCompare("ShareMedia") == .orderedSame {
-        let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-        let fileChannel = FlutterMethodChannel(name: "com.orthoquant.md/file_open",
-                                              binaryMessenger: controller.binaryMessenger)
-        fileChannel.invokeMethod("onShareIntent", arguments: nil)
+        invokeFileChannel("onShareIntent")
         return true
     }
 
     // Check if it's a file URL
     if url.isFileURL {
       let startAccess = url.startAccessingSecurityScopedResource()
-      
+
       defer {
         if startAccess {
           url.stopAccessingSecurityScopedResource()
         }
       }
-      
+
       do {
         // Create a temp file path
         let tempDirectoryURL = FileManager.default.temporaryDirectory
         let destinationURL = tempDirectoryURL.appendingPathComponent(url.lastPathComponent)
-        
+
         // Remove existing file if necessary
         if FileManager.default.fileExists(atPath: destinationURL.path) {
           try FileManager.default.removeItem(at: destinationURL)
         }
-        
+
         // Copy the file
         try FileManager.default.copyItem(at: url, to: destinationURL)
-        
+
         // Send the NEW path to Flutter via MethodChannel (reusing the one we set up for desktop)
-        let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-        let fileChannel = FlutterMethodChannel(name: "com.orthoquant.md/file_open",
-                                              binaryMessenger: controller.binaryMessenger)
-        fileChannel.invokeMethod("onFileOpened", arguments: destinationURL.path)
-        
+        invokeFileChannel("onFileOpened", arguments: destinationURL.path)
+
         return true
       } catch {
         print("Error copying file: \(error)")
         return false
       }
     }
-    
-    return super.application(app, open: url, options: options)
+
+    return false
   }
 }
