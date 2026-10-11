@@ -1,4 +1,5 @@
 import 'package:ortho_quant_md/models/measurement_model.dart';
+import 'package:ortho_quant_md/models/multi_image_session.dart';
 
 class MeasurementRecord {
   final String id;
@@ -13,6 +14,10 @@ class MeasurementRecord {
   String? templateId; // ID of the active template if any
   String? groupId; // ID of the group this record belongs to
 
+  /// Source images and points when the record was produced by a
+  /// multi-image template; [imagePath] is then the combined view.
+  MultiImageSession? multiImage;
+
   MeasurementRecord({
     required this.id,
     required this.timestamp,
@@ -25,6 +30,7 @@ class MeasurementRecord {
     this.schemaVersion = 1,
     this.templateId,
     this.groupId,
+    this.multiImage,
   });
 
   Map<String, dynamic> toJson() {
@@ -40,6 +46,7 @@ class MeasurementRecord {
       'schemaVersion': schemaVersion,
       'templateId': templateId,
       'groupId': groupId,
+      if (multiImage != null) 'multiImage': multiImage!.toJson(),
     };
   }
 
@@ -58,6 +65,11 @@ class MeasurementRecord {
       schemaVersion: json['schemaVersion'] ?? 0, // 0 implies legacy/pre-versioning
       templateId: json['templateId'],
       groupId: json['groupId'],
+      multiImage: json['multiImage'] == null
+          ? null
+          : MultiImageSession.fromJson(
+              Map<String, dynamic>.from(json['multiImage'] as Map),
+            ),
     );
   }
 }

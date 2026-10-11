@@ -12,6 +12,7 @@ import 'package:ortho_quant_md/models/measurement_model.dart';
 import 'package:ortho_quant_md/models/measurement_record.dart';
 import 'package:ortho_quant_md/models/template_model.dart';
 import 'package:ortho_quant_md/screens/export_screen.dart';
+import 'package:ortho_quant_md/screens/multi_image_template_screen.dart';
 import 'package:ortho_quant_md/screens/paywall_screen.dart';
 import 'package:ortho_quant_md/screens/save_record_screen.dart';
 import 'package:ortho_quant_md/screens/settings_screen.dart';
@@ -19,6 +20,7 @@ import 'package:ortho_quant_md/services/ai_settings_service.dart';
 import 'package:ortho_quant_md/services/settings_service.dart';
 import 'package:ortho_quant_md/services/subscription_service.dart';
 import 'package:ortho_quant_md/templates/base/measurement_template_base.dart';
+import 'package:ortho_quant_md/templates/multi_image/multi_image_template.dart';
 import 'package:ortho_quant_md/templates/template_registry.dart';
 import 'package:ortho_quant_md/utils/geometry.dart';
 
@@ -28,6 +30,7 @@ import 'package:ortho_quant_md/widgets/measurement_boxes.dart';
 import 'package:ortho_quant_md/widgets/cobb_icon.dart';
 import 'package:ortho_quant_md/widgets/magnifier_overlay_painter.dart';
 import 'package:ortho_quant_md/widgets/measurements_painter.dart';
+import 'package:ortho_quant_md/widgets/multi_image_geometry_painter.dart';
 import 'package:ortho_quant_md/widgets/success_overlay.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -103,6 +106,7 @@ class _MeasurementScreenState extends State<MeasurementScreen>
   // Template Menu State
   bool _isMenuOpen = false;
   JointCategory? _selectedCategory;
+  bool _multiImageMenuSelected = false;
   Offset?
   _infoBoxPosition; // Null initially (use default), then stores user drag position
   Offset? _aiHeadPosition;
@@ -512,11 +516,12 @@ class _MeasurementScreenState extends State<MeasurementScreen>
       return;
     }
 
-    final activeTemplate = _activeTemplate;
+    // Single-image template, or the record's multi-image template.
+    final templateTitle = _activeTemplate?.title ?? _multiImageTemplate?.title;
     final results = _getTemplateResultItems()
         .where((item) => (item['value'] ?? '').trim().isNotEmpty)
         .toList();
-    if (activeTemplate == null || results.isEmpty) {
+    if (templateTitle == null || results.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Complete a template measurement before using AI.'),
@@ -527,7 +532,7 @@ class _MeasurementScreenState extends State<MeasurementScreen>
     }
 
     final future = _generateAiInterpretation(
-      templateTitle: activeTemplate.title,
+      templateTitle: templateTitle,
       results: results,
     );
 
@@ -1335,8 +1340,207 @@ class _MeasurementScreenState extends State<MeasurementScreen>
   void _toggleMenu() {
     setState(() {
       _isMenuOpen = !_isMenuOpen;
-      if (!_isMenuOpen) _selectedCategory = null;
+      if (!_isMenuOpen) {
+        _selectedCategory = null;
+        _multiImageMenuSelected = false;
+      }
     });
+  }
+
+  /// Template of the record's multi-image session, if it has one.
+  MultiImageTemplate? get _multiImageTemplate {
+    final session = _currentRecord.multiImage;
+    return session == null ? null : multiImageTemplateById(session.templateId);
+  }
+
+  /// Multi-image templates are PRO only.
+  bool _ensurePro() {
+    if (SubscriptionService().isPro) return true;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PaywallScreen()),
+    );
+    return false;
+  }
+
+  /// Opens a multi-image template with the currently open image as Image 1.
+  Future<void> _startMultiImageTemplate(MultiImageTemplate template) async {
+    if (!_ensurePro()) return;
+    Uint8List? bytes = widget.imageBytes;
+    String? path;
+    if (bytes == null) {
+      final file = File(_currentRecord.imagePath);
+      if (await file.exists()) {
+        bytes = await file.readAsBytes();
+        path = file.path;
+      }
+    }
+    if (!mounted) return;
+    final result = await Navigator.push<MultiImageResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MultiImageTemplateScreen(
+          template: template,
+          firstImageBytes: bytes,
+          firstImagePath: path,
+        ),
+      ),
+    );
+    if (result != null) _applyMultiImageResult(result);
+  }
+
+  /// Back from the combined view to the images and their points.
+  Future<void> _editMultiImage() async {
+    final template = _multiImageTemplate;
+    final session = _currentRecord.multiImage;
+    if (template == null || session == null || !_ensurePro()) return;
+    final result = await Navigator.push<MultiImageResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MultiImageTemplateScreen(
+          template: template,
+          initialSession: session,
+        ),
+      ),
+    );
+    if (result != null) _applyMultiImageResult(result);
+  }
+
+  /// Shows the combined view on this screen: the record now points at the
+  /// composite image and keeps the session for editing and redrawing.
+  Future<void> _applyMultiImageResult(MultiImageResult result) async {
+    final record = _currentRecord;
+    record.imagePath = result.compositePath;
+    record.multiImage = result.session;
+    await _ctrl.autoSave();
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => MeasurementScreen(
+          imagePath: result.compositePath,
+          initialRecord: record,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMultiImagePanel(double screenHeight, int iconSlotsBelow) {
+    final iconCenterFromBottom = iconSlotsBelow * 64 + 90 + 32;
+    final panelHeight = math.min(
+      screenHeight - 200,
+      60.0 + (multiImageTemplates.length * 54.0),
+    );
+    return Positioned(
+      right: 84,
+      bottom: math.max(
+        100.0,
+        math.min(
+          screenHeight - panelHeight - 110,
+          iconCenterFromBottom - (panelHeight / 2),
+        ),
+      ),
+      child: Container(
+        width: 260,
+        constraints: BoxConstraints(maxHeight: screenHeight - 220),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black45,
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(4, 2, 4, 8),
+                child: Text(
+                  multiImageMenuSubtitle,
+                  style: TextStyle(color: Colors.black54, fontSize: 11),
+                ),
+              ),
+              for (final t in multiImageTemplates)
+                GestureDetector(
+                  onTap: () {
+                    _toggleMenu();
+                    _startMultiImageTemplate(t);
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00BFA5).withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF00BFA5).withValues(alpha: 0.15),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                t.title,
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                            if (!SubscriptionService().isPro)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'PRO',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            t.viewInfo,
+                            style: const TextStyle(
+                              color: Colors.black54,
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _elementTapped() {
@@ -1344,6 +1548,7 @@ class _MeasurementScreenState extends State<MeasurementScreen>
       setState(() {
         _isMenuOpen = false;
         _selectedCategory = null;
+        _multiImageMenuSelected = false;
       });
     }
   }
@@ -1606,6 +1811,9 @@ class _MeasurementScreenState extends State<MeasurementScreen>
             },
           ),
 
+        if (_multiImageMenuSelected)
+          _buildMultiImagePanel(screenHeight, displayedCategories.length),
+
         // CATEGORY ICONS STRIP (Fixed Position)
         Positioned(
           bottom: 90,
@@ -1613,56 +1821,100 @@ class _MeasurementScreenState extends State<MeasurementScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
-            children: displayedCategories.map((cat) {
-              final isSelected = _selectedCategory == cat;
-              return SizedBox(
+            children: [
+              // Multi-image menu sits above the joint categories.
+              SizedBox(
                 height: 64,
                 width: 64,
                 child: Center(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        if (_selectedCategory == cat) {
-                          _selectedCategory = null;
-                        } else {
-                          _selectedCategory = cat;
-                        }
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: isSelected ? 56 : 46,
-                      height: isSelected ? 56 : 46,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF00BFA5)
-                            : Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      child: ClipOval(
-                        child: Image.asset(
-                          cat.assetPath,
-                          color: isSelected ? Colors.white : Colors.black87,
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            cat.icon,
-                            color: isSelected ? Colors.white : Colors.black87,
-                            size: isSelected ? 28 : 24,
-                          ),
+                  child: Tooltip(
+                    message: multiImageMenuTitle,
+                    child: GestureDetector(
+                      onTap: () => setState(() {
+                        _multiImageMenuSelected = !_multiImageMenuSelected;
+                        _selectedCategory = null;
+                      }),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: _multiImageMenuSelected ? 56 : 46,
+                        height: _multiImageMenuSelected ? 56 : 46,
+                        decoration: BoxDecoration(
+                          color: _multiImageMenuSelected
+                              ? const Color(0xFF00BFA5)
+                              : Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.layers,
+                          color: _multiImageMenuSelected
+                              ? Colors.white
+                              : Colors.black87,
+                          size: _multiImageMenuSelected ? 28 : 24,
                         ),
                       ),
                     ),
                   ),
                 ),
-              );
-            }).toList(),
+              ),
+              ...displayedCategories.map((cat) {
+                final isSelected = _selectedCategory == cat;
+                return SizedBox(
+                  height: 64,
+                  width: 64,
+                  child: Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _multiImageMenuSelected = false;
+                          if (_selectedCategory == cat) {
+                            _selectedCategory = null;
+                          } else {
+                            _selectedCategory = cat;
+                          }
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: isSelected ? 56 : 46,
+                        height: isSelected ? 56 : 46,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xFF00BFA5)
+                              : Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: ClipOval(
+                          child: Image.asset(
+                            cat.assetPath,
+                            color: isSelected ? Colors.white : Colors.black87,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              cat.icon,
+                              color: isSelected ? Colors.white : Colors.black87,
+                              size: isSelected ? 28 : 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ],
           ),
         ),
       ],
@@ -1704,7 +1956,9 @@ class _MeasurementScreenState extends State<MeasurementScreen>
 
         // A. Draw Results Box (if active)
         final hasResults =
-            (_activeTemplate != null || _activeModularTemplate != null);
+            (_activeTemplate != null ||
+            _activeModularTemplate != null ||
+            _multiImageTemplate != null);
         final isArea =
             (_activeTemplate?.id == 'area_circle' ||
             _activeTemplate?.id == 'area_polygon');
@@ -1714,6 +1968,7 @@ class _MeasurementScreenState extends State<MeasurementScreen>
           final title =
               _activeModularTemplate?.title ??
               _activeTemplate?.title ??
+              _multiImageTemplate?.title ??
               'Results';
 
           final fontSize = 14.0 * scaleFactor;
@@ -1765,7 +2020,11 @@ class _MeasurementScreenState extends State<MeasurementScreen>
           final boxWidth = maxLineWidth + (padding * 2);
           final boxHeight = totalTextHeight + (padding * 2);
 
-          final screenPos = _infoBoxPosition ?? Offset(20, rootH - 350);
+          final defaultTop =
+              (_activeTemplate == null && _multiImageTemplate != null)
+              ? rootH - 470
+              : rootH - 350;
+          final screenPos = _infoBoxPosition ?? Offset(20, defaultTop);
           final dx = screenPos.dx * scaleFactor;
           final dy = screenPos.dy * scaleFactor;
 
@@ -2194,6 +2453,22 @@ class _MeasurementScreenState extends State<MeasurementScreen>
                                           ),
                                           child: const SizedBox.expand(),
                                         ),
+
+                                        // Multi-image construction, drawn live
+                                        // over the combined view.
+                                        if (_multiImageTemplate != null &&
+                                            _imageSize != null)
+                                          CustomPaint(
+                                            painter: MultiImageGeometryPainter(
+                                              template: _multiImageTemplate!,
+                                              session:
+                                                  _currentRecord.multiImage!,
+                                              imageRect: imageRect,
+                                              imageSize: _imageSize!,
+                                              viewScale: scale,
+                                            ),
+                                            child: const SizedBox.expand(),
+                                          ),
 
                                         // REMOVED: Inactive Points Loop (Moved to Painter)
 
@@ -3194,6 +3469,75 @@ class _MeasurementScreenState extends State<MeasurementScreen>
                               ),
                             ),
 
+                          // MULTI-IMAGE INFO BOX + way back to the images
+                          if (_activeTemplate == null &&
+                              _multiImageTemplate != null)
+                            Positioned(
+                              left: _infoBoxPosition?.dx ?? 20,
+                              top:
+                                  _infoBoxPosition?.dy ??
+                                  (MediaQuery.of(context).size.height - 470),
+                              child: GestureDetector(
+                                onPanUpdate: (details) {
+                                  setState(() {
+                                    final currentPos =
+                                        _infoBoxPosition ??
+                                        Offset(
+                                          20,
+                                          MediaQuery.of(context).size.height -
+                                              470,
+                                        );
+                                    _infoBoxPosition =
+                                        currentPos + details.delta;
+                                  });
+                                },
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    TemplateResultBox(
+                                      title: _multiImageTemplate!.title,
+                                      items: _getTemplateResultItems(),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    GestureDetector(
+                                      onTap: _editMultiImage,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF00BFA5),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.layers,
+                                              color: Colors.white,
+                                              size: 16,
+                                            ),
+                                            SizedBox(width: 6),
+                                            Text(
+                                              'Edit images',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
                           // MEASUREMENT LIST (Chips)
                           if (_measurements.isNotEmpty)
                             Positioned(
@@ -4035,7 +4379,12 @@ class _MeasurementScreenState extends State<MeasurementScreen>
       }).toList();
     }
 
-    if (_activeTemplate == null) return [];
+    if (_activeTemplate == null) {
+      final template = _multiImageTemplate;
+      final session = _currentRecord.multiImage;
+      if (template == null || session == null) return [];
+      return multiImageResultItems(template, session);
+    }
 
     final List<Map<String, String>> list = [];
     for (final calc in _activeTemplate!.calculations) {

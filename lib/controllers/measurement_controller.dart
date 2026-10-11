@@ -391,7 +391,9 @@ class MeasurementController extends ChangeNotifier {
     if (activeTemplateId != null) {
       _record.templateId = activeTemplateId;
     }
-    if (_measurements.isNotEmpty || !_record.isAutoSaved) {
+    if (_measurements.isNotEmpty ||
+        !_record.isAutoSaved ||
+        _record.multiImage != null) {
       await _historyService.saveRecord(_record);
     }
   }
