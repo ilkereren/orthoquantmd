@@ -1227,6 +1227,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         'Results open on the measurement screen. Reopen a '
                         'saved measurement and tap Edit images to adjust it.',
                   ),
+                  const _WhatsNewItem(
+                    title: 'Quick Survey',
+                    detail:
+                        'Tap the new survey button on the home screen to '
+                        'share your feedback in under a minute.',
+                  ),
+                  const _WhatsNewItem(
+                    title: 'AI interpretation on Mac',
+                    detail:
+                        'AI interpretation now works out of the box in the '
+                        'Mac App Store version.',
+                  ),
+                  const _WhatsNewItem(
+                    title: "What's new on update",
+                    detail:
+                        'This summary now opens automatically after each '
+                        'app update.',
+                  ),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,

@@ -35,6 +35,7 @@ This file keeps the release-history workflow explicit so the in-app "What's new"
 - Multi-Image measurements (PRO): a step-by-step flow across two images (photo or gallery), each calibrated on its own.
 - First Multi-Image template: TT-TG distance with an overlay view of both slices.
 - DONE opens the combined view on the standard measurement screen; saved records keep the images and points, and Edit images reopens them.
+- Includes the unreleased 0.7.2 changes: Quick Survey, AI interpretation on the Mac App Store version, and What's new opening automatically after an update.
 
 ## v0.7.1 Notes
 
