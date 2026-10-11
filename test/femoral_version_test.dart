@@ -64,12 +64,19 @@ void main() {
       images: [
         MultiImageEntry(
           path: '/docs/fv_0.png',
-          points: [f['head']!, f['neck']!],
+          // Ring: centre, then edge handle.
+          points: [f['head']!, f['head']! + const Offset(40, 0)],
           calibrationMm: null,
           calibrationPointCount: 0,
         ),
         MultiImageEntry(
           path: '/docs/fv_1.png',
+          points: [f['neck']!],
+          calibrationMm: null,
+          calibrationPointCount: 0,
+        ),
+        MultiImageEntry(
+          path: '/docs/fv_2.png',
           points: [f['mpc']!, f['lpc']!],
           calibrationMm: null,
           calibrationPointCount: 0,
@@ -81,7 +88,7 @@ void main() {
     expect(items[1]['value'], 'Increased');
   });
 
-  testWidgets('flow asks for no calibration', (tester) async {
+  testWidgets('three-slice flow with a ring for the head', (tester) async {
     tester.view.physicalSize = const Size(1200, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -90,11 +97,30 @@ void main() {
       MaterialApp(home: MultiImageTemplateScreen(template: t)),
     );
     await tester.pumpAndSettle();
-    // Angle only: the short rotation warning, not the monitor guide.
-    expect(t.alignToMonitor, isFalse);
-    expect(find.text('Keep both images upright'), findsOneWidget);
-    expect(find.text('Before you take the photos'), findsNothing);
-    expect(find.text('Take Photo'), findsOneWidget);
+
+    // The guide lists the three images and the monitor photo rules.
+    expect(find.text('Before you take the photos'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.text('Image 1 · Femoral head'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.text('Image 2 · Femoral neck'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.text('Image 3 · Femoral condyles'),
+      ),
+      findsOneWidget,
+    );
     await tester.tapAt(const Offset(10, 10)); // close the guide
     await tester.pumpAndSettle();
 
@@ -114,24 +140,51 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    Future<void> tapPx(Offset px) async {
+    Offset screen(Offset px) {
       final rect = tester.getRect(canvas());
-      await tester.tapAt(rect.topLeft + px * (rect.width / 900));
+      return rect.topLeft + px * (rect.width / 900);
+    }
+
+    Future<void> tapPx(Offset px) async {
+      await tester.tapAt(screen(px));
       await tester.pumpAndSettle();
     }
 
     final f = femur(version: 15);
+
+    // Image 1: one tap places a ring; no calibration is asked.
     await load();
     expect(find.text('Calibrate'), findsNothing);
-    expect(find.textContaining('Calibration from'), findsNothing);
-    expect(find.text('1 / 2'), findsOneWidget);
-    await tapPx(f['head']!);
+    expect(find.textContaining('fit the ring'), findsOneWidget);
+    const off = Offset(30, 20);
+    await tapPx(f['head']! - off);
+    expect(find.textContaining('Fit the ring to the outline'), findsOneWidget);
+
+    // Undo removes the whole ring; place it again.
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('fit the ring'), findsOneWidget);
+    await tapPx(f['head']! - off);
+
+    // Drag the ring's centre onto the true head centre.
+    final from = screen(f['head']! - off);
+    await tester.timedDragFrom(
+      from,
+      screen(f['head']!) - from,
+      const Duration(milliseconds: 400),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+
+    // Image 2: the neck centre.
+    await load();
     await tapPx(f['neck']!);
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
 
+    // Image 3: the posterior condyles.
     await load();
-    expect(find.text('Calibrate'), findsNothing);
     await tapPx(f['mpc']!);
     await tapPx(f['lpc']!);
     await tester.tap(find.text('Result').last);

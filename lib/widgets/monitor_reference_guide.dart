@@ -9,20 +9,23 @@ enum MonitorPhotoSource { camera, gallery }
 /// Explains how to photograph the monitor for a multi-image measurement and
 /// returns where the first photo should come from (null when dismissed).
 ///
-/// The monitor's corners are the shared reference that aligns the photos;
+/// The monitor's corners are the shared reference that aligns the photos.
+/// [steps] lists the template's images (which slice, what is marked);
 /// [canTakePhoto] is false where there is no camera (desktop).
 Future<MonitorPhotoSource?> showMonitorReferenceGuide(
   BuildContext context, {
   bool canTakePhoto = true,
+  List<({String title, String detail})> steps = const [],
 }) {
   return _showPhotoGuide(
     context,
     canTakePhoto: canTakePhoto,
+    steps: steps,
     icon: Icons.monitor_outlined,
     title: 'Before you take the photos',
     intro:
-        'This method measures across two consecutive images, so how the '
-        'images are captured matters. Two photos of a screen are never taken '
+        'This method measures across consecutive slices, so how the images '
+        'are captured matters. Two photos of a screen are never taken '
         'from exactly the same spot. If one photo is shifted, tilted or '
         'closer than the other, the slices no longer line up and every '
         'measurement between them is wrong. OrthoQuant straightens each '
@@ -60,39 +63,6 @@ Future<MonitorPhotoSource?> showMonitorReferenceGuide(
   );
 }
 
-/// Short guide for angle-only measurements across two images: distance and
-/// shift between the photos do not matter, but any rotation between them
-/// adds directly to the angle. Returns where the first photo should come
-/// from (null when dismissed).
-Future<MonitorPhotoSource?> showRotationGuide(
-  BuildContext context, {
-  bool canTakePhoto = true,
-}) {
-  return _showPhotoGuide(
-    context,
-    canTakePhoto: canTakePhoto,
-    icon: Icons.screen_rotation_alt,
-    title: 'Keep both images upright',
-    intro:
-        'This angle is measured between lines on two consecutive images. '
-        'Any rotation between the two images adds directly to the result.',
-    rules: const [
-      _GuideRule(
-        number: 1,
-        title: 'Do not rotate between the images',
-        detail:
-            'Hold the phone the same way for both photos, square to the '
-            'screen, and do not rotate the image in the viewer.',
-      ),
-      _GuideRule(
-        number: 2,
-        title: 'Start with new images',
-        detail: 'To follow this, we will start by choosing the images again.',
-      ),
-    ],
-  );
-}
-
 Future<MonitorPhotoSource?> _showPhotoGuide(
   BuildContext context, {
   required bool canTakePhoto,
@@ -100,6 +70,7 @@ Future<MonitorPhotoSource?> _showPhotoGuide(
   required String title,
   required String intro,
   required List<Widget> rules,
+  List<({String title, String detail})> steps = const [],
   Widget? example,
 }) {
   return showModalBottomSheet<MonitorPhotoSource>(
@@ -157,6 +128,29 @@ Future<MonitorPhotoSource?> _showPhotoGuide(
                 ),
               ),
               const SizedBox(height: 18),
+              if (steps.isNotEmpty) ...[
+                const Text(
+                  'What you will do',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                for (final step in steps)
+                  _GuideStep(title: step.title, detail: step.detail),
+                const SizedBox(height: 8),
+                const Text(
+                  'Taking the photos',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
               ...rules,
               if (example != null) ...[
                 const SizedBox(height: 6),
@@ -221,6 +215,54 @@ Future<MonitorPhotoSource?> _showPhotoGuide(
       ),
     ),
   );
+}
+
+/// One image of the template in the guide: which slice, what is marked.
+class _GuideStep extends StatelessWidget {
+  const _GuideStep({required this.title, required this.detail});
+
+  final String title;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(right: 12, top: 1),
+            child: Icon(Icons.image_outlined, color: _cornerColor, size: 22),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  detail,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13.5,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _GuideRule extends StatelessWidget {

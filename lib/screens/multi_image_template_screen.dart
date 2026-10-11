@@ -113,9 +113,15 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
       // or choose the first photo right away.
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
-        final source = widget.template.alignToMonitor
-            ? await showMonitorReferenceGuide(context, canTakePhoto: _isMobile)
-            : await showRotationGuide(context, canTakePhoto: _isMobile);
+        final source = await showMonitorReferenceGuide(
+          context,
+          canTakePhoto: _isMobile,
+          steps: [
+            for (final (n, step) in widget.template.steps.indexed)
+              if (step.summary.isNotEmpty)
+                (title: 'Image ${n + 1} · ${step.title}', detail: step.summary),
+          ],
+        );
         if (source != null && mounted) await _pickFrom(0, source);
       });
     }
@@ -168,7 +174,7 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
         _mmPerPx(i) != null &&
         st.points.length ==
             st.calibrationPointCount +
-                widget.template.steps[i].landmarks.length;
+                widget.template.steps[i].landmarkPointCount;
   }
 
   bool _tabUnlocked(int tab) {
@@ -256,15 +262,6 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
 
     final photo = await _decode(bytes);
     if (!mounted) return;
-    if (!widget.template.alignToMonitor) {
-      setState(() {
-        _steps[i]
-          ..image = photo
-          ..sourcePath = null
-          ..reset();
-      });
-      return;
-    }
     // The first aligned photo sets the screen shape; later ones (and a
     // replacement while another image is loaded) must use the same.
     final otherLoaded = [
@@ -409,8 +406,23 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
 
   void _addPoint(int i, Offset p) {
     final st = _steps[i];
-    setState(() => st.points.add(p));
-    if (st.calibrationPointCount == 2 && st.points.length == 2) {
+    final spec = widget.template.steps[i];
+    final cal = st.calibrationPointCount;
+    final next = st.points.length - cal;
+    final isRing =
+        next >= 0 &&
+        next < spec.landmarkPointCount &&
+        spec.landmarks[spec.landmarkAt(next).landmark].ring;
+    setState(() {
+      st.points.add(p);
+      // A ring starts around the tap; its edge handle sets the radius.
+      if (isRing) {
+        final img = st.image!;
+        final r = math.min(img.width, img.height) * 0.08;
+        st.points.add(p + Offset(r, 0));
+      }
+    });
+    if (cal == 2 && st.points.length == 2) {
       _showCalibrationDialog(i);
     }
   }
@@ -418,10 +430,46 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
   void _undo(int i) {
     final st = _steps[i];
     if (st.points.isEmpty) return;
+    final cal = st.calibrationPointCount;
+    final last = st.points.length - 1 - cal;
+    final ringEdge =
+        last >= 0 && widget.template.steps[i].landmarkAt(last).ringEdge;
     setState(() {
       st.points.removeLast();
+      if (ringEdge) st.points.removeLast(); // the ring goes as a whole
       if (st.points.length < 2) st.calibrationMm = null;
     });
+  }
+
+  /// Moving a ring's centre carries its edge handle along, so the ring
+  /// keeps its size; the edge handle alone resizes it.
+  void _movePoint(int i, int idx, Offset p) {
+    final st = _steps[i];
+    final k = idx - st.calibrationPointCount;
+    final spec = widget.template.steps[i];
+    setState(() {
+      if (k >= 0 && k < spec.landmarkPointCount) {
+        final at = spec.landmarkAt(k);
+        if (spec.landmarks[at.landmark].ring &&
+            !at.ringEdge &&
+            idx + 1 < st.points.length) {
+          st.points[idx + 1] += p - st.points[idx];
+        }
+      }
+      st.points[idx] = p;
+    });
+  }
+
+  /// Point indices (calibration included) of the ring centres of step [i].
+  Set<int> _ringCentres(int i) {
+    final spec = widget.template.steps[i];
+    final out = <int>{};
+    var idx = _steps[i].calibrationPointCount;
+    for (final l in spec.landmarks) {
+      if (l.ring) out.add(idx);
+      idx += l.pointCount;
+    }
+    return out;
   }
 
   /// Same dialog as the standard screen's "Calibrate Scale".
@@ -643,9 +691,10 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
     if (st.image == null) return _buildLoadPrompt(i, spec);
 
     final cal = st.calibrationPointCount;
-    final total = cal + spec.landmarks.length;
+    final total = cal + spec.landmarkPointCount;
     final placed = st.points.length;
     final needsMm = cal == 2 && placed >= 2 && st.ownMmPerPx == null;
+    final hasRing = spec.landmarks.any((l) => l.ring);
 
     final Widget pill;
     if (cal == 2 && placed == 0) {
@@ -658,10 +707,18 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
     } else if (needsMm) {
       pill = _buildStepPill('CAL', 'Tap Calibrate and enter the length in mm');
     } else if (placed < total) {
-      final l = spec.landmarks[placed - cal];
+      final j = spec.landmarkAt(placed - cal).landmark;
+      final l = spec.landmarks[j];
       pill = _buildStepPill(
-        '${placed - cal + 1} / ${spec.landmarks.length}',
+        '${j + 1} / ${spec.landmarks.length}',
         '${l.label}: ${l.instruction}',
+      );
+    } else if (hasRing && i + 1 < _steps.length) {
+      pill = _buildStepPill(
+        '✓',
+        'Fit the ring to the outline: drag its centre to move it and the '
+            'handle on its edge to resize it. Then tap Next.',
+        badgeColor: _accent,
       );
     } else {
       pill = _buildStepPill(
@@ -684,14 +741,15 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
             canPlace: !needsMm && placed < total,
             onTap: (p) => _addPoint(i, p),
             editablePoints: st.points,
-            onMovePoint: (idx, p) => setState(() => st.points[idx] = p),
+            onMovePoint: (idx, p) => _movePoint(i, idx, p),
             painterBuilder: (scale) => _StepPainter(
               image: st.image!,
               points: st.points,
               labels: [
                 if (cal == 2) ...['', ''],
-                ...spec.landmarks.map((l) => l.label),
+                for (final l in spec.landmarks) ...[l.label, if (l.ring) ''],
               ],
+              ringCentres: _ringCentres(i),
               calibrationPoints: cal,
               calibrationMm: st.calibrationMm,
               scale: scale,
@@ -839,11 +897,8 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
               right: 12,
               bottom: 60,
               child: Text(
-                widget.template.alignToMonitor
-                    ? 'Photos are straightened by the monitor corners. Keep '
-                          'the viewer zoom and pan unchanged between them.'
-                    : 'Any rotation between the two images changes the '
-                          'angle.',
+                'Photos are straightened by the monitor corners. Keep the '
+                'viewer zoom and pan unchanged between them.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.6),
@@ -932,7 +987,7 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
       final st = _steps[i];
       final hasImage = st.image != null;
       final cal = st.calibrationPointCount;
-      final total = cal + widget.template.steps[i].landmarks.length;
+      final total = cal + widget.template.steps[i].landmarkPointCount;
       final complete = _stepComplete(i);
       buttons = [
         _bottomButton(
@@ -1232,6 +1287,9 @@ class _StepPainter extends CustomPainter {
   final ui.Image image;
   final List<Offset> points;
   final List<String> labels;
+
+  /// Indices of ring centres; the next point is each ring's edge handle.
+  final Set<int> ringCentres;
   final int calibrationPoints;
   final double? calibrationMm;
   final double scale;
@@ -1243,6 +1301,7 @@ class _StepPainter extends CustomPainter {
     required this.image,
     required this.points,
     required this.labels,
+    this.ringCentres = const {},
     required this.calibrationPoints,
     required this.calibrationMm,
     required this.scale,
@@ -1285,7 +1344,35 @@ class _StepPainter extends CustomPainter {
     }
 
     final radius = (settings.landmarkSize * 5.0 / 2) * s;
+    for (final c in ringCentres) {
+      if (c + 1 >= points.length) continue;
+      canvas.drawCircle(
+        points[c],
+        (points[c + 1] - points[c]).distance,
+        Paint()
+          ..color = const Color(0xFF4DD0E1)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = settings.lineThickness * s,
+      );
+    }
     for (var i = 0; i < points.length; i++) {
+      if (ringCentres.contains(i - 1)) {
+        // Edge handle of a ring: a small hollow knob on the ring.
+        canvas.drawCircle(
+          points[i],
+          radius * 0.9,
+          Paint()..color = Colors.white,
+        );
+        canvas.drawCircle(
+          points[i],
+          radius * 0.9,
+          Paint()
+            ..color = const Color(0xFF4DD0E1)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2 * s,
+        );
+        continue;
+      }
       final isCal = i < calibrationPoints;
       canvas.drawCircle(
         points[i],
@@ -1300,7 +1387,17 @@ class _StepPainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = (isCal ? 1.0 : 2.0) * s,
       );
-      if (labels[i].isNotEmpty) {
+      if (labels[i].isEmpty) continue;
+      if (ringCentres.contains(i) && i + 1 < points.length) {
+        // Above the ring, clear of its edge handle.
+        final ringR = (points[i + 1] - points[i]).distance;
+        _text(
+          canvas,
+          labels[i],
+          points[i] - Offset(0, ringR + 14 * s),
+          settings.textSize * 0.85 * s,
+        );
+      } else {
         _text(
           canvas,
           labels[i],

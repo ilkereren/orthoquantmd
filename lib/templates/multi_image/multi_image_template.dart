@@ -17,13 +17,29 @@ class LandmarkSpec {
   final String id;
   final String label;
   final String instruction;
-  const LandmarkSpec(this.id, this.label, this.instruction);
+
+  /// A ring fitted to a round outline (e.g. the femoral head): placed with
+  /// one tap, then moved by its centre and resized by a handle on its edge.
+  /// Its centre is the landmark. Stored as two points: centre, edge handle.
+  final bool ring;
+
+  const LandmarkSpec(
+    this.id,
+    this.label,
+    this.instruction, {
+    this.ring = false,
+  });
+
+  int get pointCount => ring ? 2 : 1;
 }
 
 class ImageStepSpec {
   final String title;
   final String loadPrompt;
   final List<LandmarkSpec> landmarks;
+
+  /// One line for the photo guide: which slice, and what is marked on it.
+  final String summary;
 
   /// False when the image shares the pixel spacing of the previous
   /// calibrated image (e.g. slices of the same CT series at the same zoom),
@@ -34,8 +50,25 @@ class ImageStepSpec {
     required this.title,
     required this.loadPrompt,
     required this.landmarks,
+    this.summary = '',
     this.calibrate = true,
   });
+
+  /// Points placed for the landmarks (rings take two).
+  int get landmarkPointCount =>
+      landmarks.fold(0, (sum, l) => sum + l.pointCount);
+
+  /// The landmark that point [k] (counted after calibration) belongs to,
+  /// and whether it is a ring's edge handle rather than the landmark itself.
+  ({int landmark, bool ringEdge}) landmarkAt(int k) {
+    var start = 0;
+    for (var j = 0; j < landmarks.length; j++) {
+      final n = landmarks[j].pointCount;
+      if (k < start + n) return (landmark: j, ringEdge: k > start);
+      start += n;
+    }
+    return (landmark: landmarks.length, ringEdge: false);
+  }
 }
 
 class ResultLine {
@@ -65,10 +98,11 @@ Map<String, Offset> landmarksInMm(
   for (var i = 0; i < template.steps.length && i < points.length; i++) {
     final k = mmPerPx[i];
     if (k == null) continue;
-    final specs = template.steps[i].landmarks;
-    for (var j = 0; j < specs.length; j++) {
-      final idx = calibrationPointCounts[i] + j;
-      if (idx < points[i].length) out[specs[j].id] = points[i][idx] * k;
+    var idx = calibrationPointCounts[i];
+    for (final spec in template.steps[i].landmarks) {
+      // A ring's landmark is its centre, the first of its two points.
+      if (idx < points[i].length) out[spec.id] = points[i][idx] * k;
+      idx += spec.pointCount;
     }
   }
   return out;
@@ -95,11 +129,6 @@ abstract class MultiImageTemplate {
 
   /// False for angle-only templates, which skip calibration entirely.
   bool get usesCalibration => steps.any((s) => s.calibrate);
-
-  /// Whether each photo is straightened onto the monitor by its corners.
-  /// Distances need it; an angle only needs the images not to be rotated
-  /// relative to each other, so angle templates may turn it off.
-  bool get alignToMonitor => true;
 
   /// [mm] holds every landmark of every step, keyed by landmark id, in the
   /// common millimetre plane.

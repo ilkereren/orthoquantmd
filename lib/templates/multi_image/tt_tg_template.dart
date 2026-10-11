@@ -29,6 +29,10 @@ class TtTgTemplate extends MultiImageTemplate {
   List<ImageStepSpec> get steps => const [
     ImageStepSpec(
       title: 'Trochlea',
+      summary:
+          'Most proximal slice with the complete cartilaginous trochlea. '
+          'Calibrate, then mark both posterior condyles and the deepest '
+          'point of the trochlear groove.',
       loadPrompt:
           'Photograph the monitor with all four corners visible, showing the '
           'most proximal axial CT/MRI slice with the complete cartilaginous '
@@ -49,6 +53,9 @@ class TtTgTemplate extends MultiImageTemplate {
     ),
     ImageStepSpec(
       title: 'Tibial tuberosity',
+      summary:
+          'Most proximal slice where the patellar tendon inserts. Mark the '
+          'midpoint of the insertion.',
       loadPrompt:
           'Scroll (do not pan or zoom) to the most proximal slice where the '
           'patellar tendon inserts on the tibial tuberosity, then photograph '

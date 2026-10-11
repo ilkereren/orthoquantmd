@@ -4,11 +4,14 @@ import 'package:flutter/material.dart';
 
 import 'multi_image_template.dart';
 
-/// Femoral version by the Reikerås method, on two axial CT slices of the
-/// same series: the femoral neck axis (head centre → neck centre) against
-/// the posterior condylar line. An angle does not change with the photos'
-/// distance or shift, so they are neither calibrated nor aligned to the
-/// monitor; only rotation between them must be avoided (the user is told).
+/// Femoral version by the Reikerås method, on three axial CT slices of the
+/// same series: the femoral head centre (a ring fitted to the head) and the
+/// neck centre on their own slices give the neck axis, compared with the
+/// posterior condylar line on a distal slice.
+///
+/// The neck axis joins points from two photos, so a shift between them
+/// would turn the axis: the photos are straightened onto the monitor by its
+/// corners like every multi-image template. Angle only, so no calibration.
 ///
 /// Images are read in the standard axial orientation (anterior at the top).
 /// Positive = anteversion (head anterior to the neck), negative =
@@ -25,36 +28,63 @@ class FemoralVersionTemplate extends MultiImageTemplate {
   String get title => 'Femoral Version';
 
   @override
-  String get viewInfo => 'Axial CT · Reikerås · 2 slices';
+  String get viewInfo => 'Axial CT · Reikerås · 3 slices';
 
   @override
   IconData get icon => Icons.rotate_right;
 
   @override
-  bool get alignToMonitor => false;
-
-  @override
   List<ImageStepSpec> get steps => const [
     ImageStepSpec(
-      title: 'Femoral neck',
+      title: 'Femoral head',
+      summary:
+          'Slice through the centre of the femoral head. Tap the head; a '
+          'ring appears. Fit the ring to the head\'s outline: its centre is '
+          'the head centre.',
       loadPrompt:
-          'Axial CT slice where the femoral head and neck are seen together '
-          '(anterior at the top).',
+          'Photograph the monitor with all four corners visible, showing the '
+          'axial slice through the centre of the femoral head (anterior at '
+          'the top).',
       landmarks: [
-        LandmarkSpec('head', 'Head centre', 'Centre of the femoral head'),
+        LandmarkSpec(
+          'head',
+          'Head',
+          'Tap the femoral head, then fit the ring to its outline',
+          ring: true,
+        ),
+      ],
+      calibrate: false,
+    ),
+    ImageStepSpec(
+      title: 'Femoral neck',
+      // Reikerås: the neck level where the cortices run parallel. A point
+      // at the neck base would make it Murphy's method, with higher values.
+      summary:
+          'Slice through the femoral neck where its anterior and posterior '
+          'cortices run parallel. Mark the midpoint between the two '
+          'cortices.',
+      loadPrompt:
+          'Scroll (do not pan or zoom) to the femoral neck slice where its '
+          'anterior and posterior cortices run parallel, then photograph the '
+          'monitor with all four corners visible.',
+      landmarks: [
         LandmarkSpec(
           'neck',
           'Neck centre',
-          'Midpoint of the femoral neck at its narrowest part',
+          'Midpoint between the anterior and posterior cortices of the neck',
         ),
       ],
       calibrate: false,
     ),
     ImageStepSpec(
       title: 'Femoral condyles',
+      summary:
+          'Distal femur slice. Mark the most posterior points of both '
+          'condyles.',
       loadPrompt:
-          'Distal femur slice showing both posterior condyles. Do not '
-          'rotate the phone or the image relative to the first one.',
+          'Scroll (do not pan or zoom) to the distal femur slice showing both '
+          'posterior condyles, then photograph the monitor with all four '
+          'corners visible.',
       landmarks: [
         LandmarkSpec(
           'mpc',
@@ -167,6 +197,11 @@ class FemoralVersionTemplate extends MultiImageTemplate {
     MmToPx toPx,
     double s,
   ) {
+    if (mm.containsKey('head') && !mm.containsKey('neck')) {
+      final head = toPx(mm['head']!);
+      _point(canvas, head, _img1Color, s);
+      _label(canvas, head, 'Head centre (Image 1)', _img1Color, s);
+    }
     if (mm.containsKey('head') && mm.containsKey('neck')) {
       final head = toPx(mm['head']!), neck = toPx(mm['neck']!);
       final ghost = Paint()

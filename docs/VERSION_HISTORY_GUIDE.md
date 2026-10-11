@@ -32,9 +32,9 @@ This file keeps the release-history workflow explicit so the in-app "What's new"
 
 ## Current v0.8.0 Notes
 
-- Multi-Image measurements (PRO): a step-by-step flow across two images (photo or gallery). Templates: TT-TG distance and femoral anteversion (Reikerås).
-- Distance templates (TT-TG): after each photo, the user drags four handles onto the monitor's screen corners and the photo is straightened onto the screen plane, so both photos share one frame and Image 2 reuses Image 1's calibration. A guide explains this first (scroll only, no pan/zoom) and the measurement starts with new photos.
-- Angle templates (femoral anteversion): no calibration or corner alignment; a short guide warns that rotation between the two images adds to the angle.
+- Multi-Image measurements (PRO): a step-by-step flow across consecutive CT/MRI slices (photo or gallery). Templates: TT-TG distance (2 slices) and femoral anteversion (Reikerås, 3 slices).
+- After each photo, the user drags four handles onto the monitor's screen corners and the photo is straightened onto the screen plane, so all photos share one frame (and later images reuse Image 1's calibration). A guide lists the template's images and the photo rules first (scroll only, no pan/zoom), and the measurement starts with new photos.
+- Femoral anteversion: femoral head centre from a ring fitted to the head on the head slice, neck centre on the neck slice, posterior condylar line on the distal slice. Angle only, so no calibration.
 - DONE opens the combined view on the standard measurement screen; saved records keep the images and points, and Edit images reopens them.
 - Includes the unreleased 0.7.2 changes: Quick Survey, AI interpretation on the Mac App Store version, and What's new opening automatically after an update.
 - Bug fix: launch crash on iOS 27 (0.7.1 was built with the iOS 27 SDK without UIScene lifecycle adoption). iOS now uses `SceneDelegate` (Flutter 3.47.7); Swift Package Manager is disabled so plugins stay on CocoaPods only.
