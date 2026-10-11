@@ -225,25 +225,29 @@ class _SurveyScreenState extends State<SurveyScreen> {
                 child: RadioGroup<String>(
                   groupValue: _frequency,
                   onChanged: (v) => setState(() => _frequency = v),
-                  child: Column(
-                    children: [
-                      for (final option in surveyFrequencyOptions)
-                        RadioListTile<String>(
-                          value: option,
-                          title: Text(
-                            option,
-                            style: const TextStyle(color: Colors.white),
+                  // Own Material so tile ink isn't hidden by the card colour.
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: Column(
+                      children: [
+                        for (final option in surveyFrequencyOptions)
+                          RadioListTile<String>(
+                            value: option,
+                            title: Text(
+                              option,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            activeColor: _accent,
+                            fillColor: WidgetStateProperty.resolveWith(
+                              (states) => states.contains(WidgetState.selected)
+                                  ? _accent
+                                  : Colors.white54,
+                            ),
                           ),
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          activeColor: _accent,
-                          fillColor: WidgetStateProperty.resolveWith(
-                            (states) => states.contains(WidgetState.selected)
-                                ? _accent
-                                : Colors.white54,
-                          ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
