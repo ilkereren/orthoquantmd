@@ -69,6 +69,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // A new measurement opens with the monitor photo guide, offering to take
+    // or choose the first photo; dismissing it leaves the load prompt.
+    expect(find.text('Before you take the photos'), findsOneWidget);
+    expect(find.text('Take Photo'), findsOneWidget);
+    expect(find.text('Choose from Gallery'), findsOneWidget);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(find.text('Before you take the photos'), findsNothing);
+
     // Result tab is locked until both images are done.
     expect(find.byIcon(Icons.lock), findsNWidgets(2));
 
@@ -77,8 +86,8 @@ void main() {
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
 
-    // Image 2 is calibrated on its own; the dialog suggests Image 1's mm.
-    await doStep(tester, [demoPx(80, -108)]);
+    // Image 2 shares Image 1's screen plane, so its calibration too.
+    await doStep(tester, [demoPx(80, -108)], calibrate: false);
     await tester.tap(find.text('Result').last);
     await tester.pumpAndSettle();
 

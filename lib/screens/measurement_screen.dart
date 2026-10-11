@@ -1363,27 +1363,15 @@ class _MeasurementScreenState extends State<MeasurementScreen>
     return false;
   }
 
-  /// Opens a multi-image template with the currently open image as Image 1.
+  /// Opens a multi-image template. The image already open here is not used:
+  /// it was not captured by the template's photo rules, so the images are
+  /// taken again inside the template.
   Future<void> _startMultiImageTemplate(MultiImageTemplate template) async {
     if (!_ensurePro()) return;
-    Uint8List? bytes = widget.imageBytes;
-    String? path;
-    if (bytes == null) {
-      final file = File(_currentRecord.imagePath);
-      if (await file.exists()) {
-        bytes = await file.readAsBytes();
-        path = file.path;
-      }
-    }
-    if (!mounted) return;
     final result = await Navigator.push<MultiImageResult>(
       context,
       MaterialPageRoute(
-        builder: (context) => MultiImageTemplateScreen(
-          template: template,
-          firstImageBytes: bytes,
-          firstImagePath: path,
-        ),
+        builder: (context) => MultiImageTemplateScreen(template: template),
       ),
     );
     if (result != null) _applyMultiImageResult(result);

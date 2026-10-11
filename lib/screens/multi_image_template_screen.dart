@@ -5,7 +5,6 @@ import 'dart:ui' as ui;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -14,7 +13,9 @@ import '../services/settings_service.dart';
 import '../templates/multi_image/multi_image_template.dart';
 import '../widgets/magnifier_overlay_painter.dart';
 import '../widgets/measurement_boxes.dart';
+import '../widgets/monitor_reference_guide.dart';
 import 'camera_screen.dart';
+import 'screen_corner_crop_screen.dart';
 import 'settings_screen.dart';
 
 const _accent = Color(0xFF00BFA5);
@@ -71,20 +72,12 @@ class MultiImageResult {
 class MultiImageTemplateScreen extends StatefulWidget {
   final MultiImageTemplate template;
 
-  /// Encoded bytes of an image already open in the app, used as Image 1.
-  final Uint8List? firstImageBytes;
-
-  /// File of that image, if any.
-  final String? firstImagePath;
-
   /// A stored session to reopen for editing (images, points, calibration).
   final MultiImageSession? initialSession;
 
   const MultiImageTemplateScreen({
     super.key,
     required this.template,
-    this.firstImageBytes,
-    this.firstImagePath,
     this.initialSession,
   });
 
@@ -105,14 +98,26 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
 
   bool _finishing = false;
 
+  /// Width / height of the monitor every photo is straightened to; set by
+  /// the first aligned photo so all of them share one screen plane.
+  double? _screenAspect;
+
   @override
   void initState() {
     super.initState();
     final session = widget.initialSession;
     if (session != null) {
       _restore(session);
-    } else if (widget.firstImageBytes != null) {
-      _setImage(0, widget.firstImageBytes!, path: widget.firstImagePath);
+    } else {
+      // New measurement: explain how to photograph the monitor, then take
+      // or choose the first photo right away.
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        final source = widget.template.alignToMonitor
+            ? await showMonitorReferenceGuide(context, canTakePhoto: _isMobile)
+            : await showRotationGuide(context, canTakePhoto: _isMobile);
+        if (source != null && mounted) await _pickFrom(0, source);
+      });
     }
   }
 
@@ -134,6 +139,7 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
     }
     if (!mounted) return;
     setState(() {
+      _screenAspect = session.screenAspect;
       _resultBackground = session.baseIndex.clamp(0, _steps.length - 1);
       _overlayOpacity = session.overlayOpacity;
       if (_tabUnlocked(_resultTab)) _tab = _resultTab;
@@ -150,7 +156,11 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
     return 0;
   }
 
-  double? _mmPerPx(int i) => _steps[_calibrationSource(i)].ownMmPerPx;
+  /// Angle-only templates are not calibrated: every straightened image has
+  /// the same px scale, so 1 unit per px is enough.
+  double? _mmPerPx(int i) => widget.template.usesCalibration
+      ? _steps[_calibrationSource(i)].ownMmPerPx
+      : 1;
 
   bool _stepComplete(int i) {
     final st = _steps[i];
@@ -186,22 +196,17 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
 
   // ---------------------------------------------------------------- loading
 
-  bool get _isMobile => !kIsWeb && (Platform.isIOS || Platform.isAndroid);
+  bool get _isMobile =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android);
 
   /// Same sources as the home screen: photograph the monitor, or pick a
-  /// saved image (then crop). Desktop and web use a file picker.
+  /// saved image; then align it to the monitor. Desktop and web use a file
+  /// picker.
   Future<void> _pick(int i) async {
-    if (!_isMobile) {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        withData: true,
-      );
-      final file = result?.files.single;
-      if (file?.bytes == null) return;
-      await _setImage(i, file!.bytes!, path: kIsWeb ? null : file.path);
-      return;
-    }
-    final source = await showModalBottomSheet<String>(
+    if (!_isMobile) return _pickFrom(i, MonitorPhotoSource.gallery);
+    final source = await showModalBottomSheet<MonitorPhotoSource>(
       context: context,
       builder: (context) => SafeArea(
         child: Column(
@@ -210,7 +215,7 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
             ListTile(
               leading: const Icon(Icons.camera_alt_rounded, color: _accent),
               title: const Text('Take Photo'),
-              onTap: () => Navigator.pop(context, 'camera'),
+              onTap: () => Navigator.pop(context, MonitorPhotoSource.camera),
             ),
             ListTile(
               leading: const Icon(
@@ -218,61 +223,75 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
                 color: Color(0xFF2979FF),
               ),
               title: const Text('Select from Gallery'),
-              onTap: () => Navigator.pop(context, 'gallery'),
+              onTap: () => Navigator.pop(context, MonitorPhotoSource.gallery),
             ),
           ],
         ),
       ),
     );
     if (!mounted || source == null) return;
+    await _pickFrom(i, source);
+  }
 
-    String? path;
-    if (source == 'camera') {
+  /// Takes or picks a photo of the monitor for image [i], then lets the
+  /// user drag its corners onto the screen and straightens it.
+  Future<void> _pickFrom(int i, MonitorPhotoSource source) async {
+    Uint8List? bytes;
+    if (!_isMobile) {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
+      bytes = result?.files.single.bytes;
+    } else if (source == MonitorPhotoSource.camera) {
       final result = await Navigator.of(
         context,
       ).push(MaterialPageRoute(builder: (context) => const CameraScreen()));
-      if (result is String) path = result;
+      if (result is String) bytes = await File(result).readAsBytes();
     } else {
       final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-      if (picked == null) return;
-      path = picked.path;
-      try {
-        final cropped = await ImageCropper().cropImage(
-          sourcePath: picked.path,
-          uiSettings: [
-            AndroidUiSettings(
-              toolbarTitle: 'Crop Image',
-              toolbarColor: Colors.black,
-              toolbarWidgetColor: Colors.white,
-              initAspectRatio: CropAspectRatioPreset.original,
-              lockAspectRatio: false,
-            ),
-            IOSUiSettings(title: 'Crop Image'),
-          ],
-        );
-        if (cropped != null) path = cropped.path;
-      } catch (e) {
-        debugPrint('Crop error: $e');
-      }
+      if (picked != null) bytes = await picked.readAsBytes();
     }
-    if (path == null) return;
-    await _setImage(i, await File(path).readAsBytes(), path: path);
+    if (bytes == null || !mounted) return;
+
+    final photo = await _decode(bytes);
+    if (!mounted) return;
+    if (!widget.template.alignToMonitor) {
+      setState(() {
+        _steps[i]
+          ..image = photo
+          ..sourcePath = null
+          ..reset();
+      });
+      return;
+    }
+    // The first aligned photo sets the screen shape; later ones (and a
+    // replacement while another image is loaded) must use the same.
+    final otherLoaded = [
+      for (var j = 0; j < _steps.length; j++)
+        if (j != i && _steps[j].image != null) j,
+    ].isNotEmpty;
+    final aligned = await Navigator.of(context).push<AlignedScreenPhoto>(
+      MaterialPageRoute(
+        builder: (context) => ScreenCornerCropScreen(
+          photo: photo,
+          screenAspect: otherLoaded ? _screenAspect : null,
+        ),
+      ),
+    );
+    if (aligned == null || !mounted) return;
+    setState(() {
+      _screenAspect = aligned.aspect;
+      _steps[i]
+        ..image = aligned.image
+        ..sourcePath = null
+        ..reset();
+    });
   }
 
   Future<ui.Image> _decode(Uint8List bytes) async {
     final codec = await ui.instantiateImageCodec(bytes);
     return (await codec.getNextFrame()).image;
-  }
-
-  Future<void> _setImage(int i, Uint8List bytes, {String? path}) async {
-    final img = await _decode(bytes);
-    if (!mounted) return;
-    setState(() {
-      _steps[i]
-        ..image = img
-        ..sourcePath = path
-        ..reset();
-    });
   }
 
   Future<void> _loadDemo(int i) async {
@@ -317,6 +336,7 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
         images: entries,
         baseIndex: _resultBackground,
         overlayOpacity: _overlayOpacity,
+        screenAspect: _screenAspect,
       );
       final compositePath = '${dir.path}/mi_${stamp}_combined.png';
       await File(compositePath).writeAsBytes(await _renderComposite());
@@ -653,7 +673,8 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
       );
     }
 
-    final inherited = cal == 0 && _mmPerPx(i) != null;
+    final inherited =
+        cal == 0 && widget.template.usesCalibration && _mmPerPx(i) != null;
 
     return Stack(
       children: [
@@ -818,8 +839,11 @@ class _MultiImageTemplateScreenState extends State<MultiImageTemplateScreen> {
               right: 12,
               bottom: 60,
               child: Text(
-                'Images are related by their calibration only. Keep the same '
-                'viewer zoom and framing for every photo.',
+                widget.template.alignToMonitor
+                    ? 'Photos are straightened by the monitor corners. Keep '
+                          'the viewer zoom and pan unchanged between them.'
+                    : 'Any rotation between the two images changes the '
+                          'angle.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.6),

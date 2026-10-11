@@ -5,8 +5,9 @@ import 'package:flutter/material.dart';
 import 'multi_image_template.dart';
 
 /// Tibial tuberosity – trochlear groove distance (Dejour 1994), measured on
-/// two axial slices of the same series. Each photo is calibrated on its own
-/// (camera distance may differ); both are assumed to share viewer framing.
+/// two axial slices of the same series. Both photos are straightened onto
+/// the monitor by its corners, so they share one screen plane as long as the
+/// viewer's zoom and pan stay unchanged.
 class TtTgTemplate extends MultiImageTemplate {
   static const _img1Color = Color(0xFF4DD0E1);
   static const _img2Color = Color(0xFFFFB74D);
@@ -29,8 +30,9 @@ class TtTgTemplate extends MultiImageTemplate {
     ImageStepSpec(
       title: 'Trochlea',
       loadPrompt:
-          'Axial CT/MRI slice: the most proximal slice showing the '
-          'complete cartilaginous trochlea.',
+          'Photograph the monitor with all four corners visible, showing the '
+          'most proximal axial CT/MRI slice with the complete cartilaginous '
+          'trochlea.',
       landmarks: [
         LandmarkSpec(
           'mpc',
@@ -48,12 +50,14 @@ class TtTgTemplate extends MultiImageTemplate {
     ImageStepSpec(
       title: 'Tibial tuberosity',
       loadPrompt:
-          'Axial slice from the SAME series with the SAME zoom and pan: '
-          'the most proximal slice where the patellar tendon inserts on '
-          'the tibial tuberosity. Keep the viewer zoom and pan unchanged.',
+          'Scroll (do not pan or zoom) to the most proximal slice where the '
+          'patellar tendon inserts on the tibial tuberosity, then photograph '
+          'the monitor with all four corners visible.',
       landmarks: [
         LandmarkSpec('tt', 'TT', 'Midpoint of the patellar tendon insertion'),
       ],
+      // Straightened onto the same screen plane as Image 1.
+      calibrate: false,
     ),
   ];
 

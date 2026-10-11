@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'femoral_version_template.dart';
 import 'tt_tg_template.dart';
 
 /// Name of the menu that groups measurements spanning several images.
@@ -7,7 +8,10 @@ const String multiImageMenuTitle = 'Multi-Image';
 const String multiImageMenuSubtitle = 'Measurements across two or more images';
 
 /// All multi-image templates, in menu order.
-final List<MultiImageTemplate> multiImageTemplates = [TtTgTemplate()];
+final List<MultiImageTemplate> multiImageTemplates = [
+  TtTgTemplate(),
+  FemoralVersionTemplate(),
+];
 
 class LandmarkSpec {
   final String id;
@@ -88,6 +92,14 @@ abstract class MultiImageTemplate {
   String get viewInfo;
   IconData get icon;
   List<ImageStepSpec> get steps;
+
+  /// False for angle-only templates, which skip calibration entirely.
+  bool get usesCalibration => steps.any((s) => s.calibrate);
+
+  /// Whether each photo is straightened onto the monitor by its corners.
+  /// Distances need it; an angle only needs the images not to be rotated
+  /// relative to each other, so angle templates may turn it off.
+  bool get alignToMonitor => true;
 
   /// [mm] holds every landmark of every step, keyed by landmark id, in the
   /// common millimetre plane.

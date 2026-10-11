@@ -68,11 +68,16 @@ class MultiImageSession {
   /// Opacity of the other images over the base in the combined view.
   final double overlayOpacity;
 
+  /// Width / height of the monitor the photos were straightened to (null
+  /// for records made before photos were aligned to the monitor).
+  final double? screenAspect;
+
   const MultiImageSession({
     required this.templateId,
     required this.images,
     required this.baseIndex,
     required this.overlayOpacity,
+    this.screenAspect,
   });
 
   Map<String, dynamic> toJson() => {
@@ -80,6 +85,7 @@ class MultiImageSession {
     'images': images.map((e) => e.toJson()).toList(),
     'baseIndex': baseIndex,
     'overlayOpacity': overlayOpacity,
+    if (screenAspect != null) 'screenAspect': screenAspect,
   };
 
   factory MultiImageSession.fromJson(Map<String, dynamic> json) =>
@@ -91,11 +97,14 @@ class MultiImageSession {
         ],
         baseIndex: json['baseIndex'] as int? ?? 0,
         overlayOpacity: (json['overlayOpacity'] as num?)?.toDouble() ?? 0.5,
+        screenAspect: (json['screenAspect'] as num?)?.toDouble(),
       );
 
   /// mm per pixel of image [i]; images without their own calibration use the
-  /// nearest earlier calibrated image.
+  /// nearest earlier calibrated image. Angle-only measurements have no
+  /// calibration at all: their straightened images share one px scale.
   double? mmPerPx(int i) {
+    if (images.every((e) => e.calibrationPointCount < 2)) return 1;
     for (var j = i; j >= 0; j--) {
       if (images[j].calibrationPointCount >= 2) return images[j].ownMmPerPx;
     }
