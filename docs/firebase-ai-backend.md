@@ -55,8 +55,10 @@ cd ..
 firebase deploy --only functions
 ```
 
-After deploy, Firebase prints the `interpretResults` HTTPS URL.
-Use that URL when running or building Flutter:
+The production URL
+(`https://europe-west1-orthoquantmd.cloudfunctions.net/interpretResults`) is the
+default value of `AiSettingsService.orthoQuantProxyUrl`, so normal builds need no
+extra flags. To point a build at a different deployment, override it:
 
 ```sh
 flutter run -d web-server \

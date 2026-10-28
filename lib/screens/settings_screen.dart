@@ -1316,6 +1316,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showVersionHistory(BuildContext context) {
     final List<Map<String, dynamic>> history = [
       {
+        'version': 'v0.7.1',
+        'date': 'Oct 2026',
+        'changes': [
+          "New clinical templates: Calcaneus (Böhler's and Gissane's angles) and Spondylolisthesis (Meyerding slip %, segmental lordosis, and slip angle).",
+          'Newly added templates are now marked with a NEW badge in the template menu.',
+          'Subscription plans load more reliably, with a clear retry option if they cannot be loaded.',
+          'OrthoQuant MD is now available on the Mac App Store.',
+          'Minor bug fixes and stability improvements.',
+        ],
+      },
+      {
         'version': 'v0.7.0',
         'date': 'May 2026',
         'changes': [
@@ -1540,7 +1551,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: item['version'] == 'v0.7.0'
+                  color: item['version'] == 'v0.7.1'
                       ? const Color(0xFF00BFA5)
                       : Colors.white24,
                   shape: BoxShape.circle,
@@ -1566,7 +1577,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       item['version'],
                       style: TextStyle(
-                        color: item['version'] == 'v0.7.0'
+                        color: item['version'] == 'v0.7.1'
                             ? const Color(0xFF00BFA5)
                             : Colors.white,
                         fontWeight: FontWeight.bold,

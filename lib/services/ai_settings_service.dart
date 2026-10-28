@@ -84,9 +84,12 @@ class AiSettingsService {
   static const int orthoQuantWeeklyLimit = 10;
   static const AiProvider orthoQuantProvider = AiProvider.openai;
   static const String orthoQuantModel = 'gpt-5.4-mini';
+  // Public endpoint (not a secret); --dart-define can override it, e.g. to
+  // point at the local functions emulator.
   static const String orthoQuantProxyUrl = String.fromEnvironment(
     'ORTHOQUANT_AI_PROXY_URL',
-    defaultValue: '',
+    defaultValue:
+        'https://europe-west1-orthoquantmd.cloudfunctions.net/interpretResults',
   );
 
   Future<AiSettings> loadSettings() async {
